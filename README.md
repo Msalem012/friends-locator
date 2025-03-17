@@ -1,3 +1,3 @@
-# friends-locator
+# GeoPulse1.0
 
-:P
+
