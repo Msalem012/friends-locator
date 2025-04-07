@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 
 // Register route
@@ -40,15 +39,20 @@ router.post('/register', async (req, res) => {
 
         await client.query('COMMIT');
 
-        // Create token
-        const token = jwt.sign({ id: result.rows[0].id }, process.env.JWT_SECRET);
-
         // Set session
         req.session.user = {
             id: result.rows[0].id,
             username: result.rows[0].username,
             email: result.rows[0].email
         };
+
+        // Save session explicitly
+        await new Promise((resolve, reject) => {
+            req.session.save(err => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
 
         res.redirect('/');
     } catch (error) {
@@ -80,15 +84,20 @@ router.post('/login', async (req, res) => {
             return res.render('login', { error: 'Invalid email or password' });
         }
 
-        // Create token
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
-
         // Set session
         req.session.user = {
             id: user.id,
             username: user.username,
             email: user.email
         };
+
+        // Save session explicitly
+        await new Promise((resolve, reject) => {
+            req.session.save(err => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
 
         res.redirect('/');
     } catch (error) {

@@ -2,35 +2,29 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+    connectionString: process.env.DATABASE_URL || 'postgresql://geoloc_db_user:bQEoaTIW1woXxglTsoRZDxbGU9rp2KGA@dpg-cvpk30euk2gs739l3drg-a.frankfurt-postgres.render.com/geoloc_db',
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 // Test the connection
-pool.on('connect', () => {
-    console.log('Database connected successfully');
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('Error connecting to the database:', err.stack);
+    } else {
+        console.log('Successfully connected to database');
+        release();
+    }
 });
 
+// Handle pool errors
 pool.on('error', (err) => {
     console.error('Unexpected error on idle client', err);
     process.exit(-1);
 });
 
 module.exports = {
-    query: async (text, params) => {
-        const client = await pool.connect();
-        try {
-            const result = await client.query(text, params);
-            return result;
-        } catch (err) {
-            console.error('Database query error:', err.message);
-            throw err;
-        } finally {
-            client.release();
-        }
-    },
-    pool
+    pool,
+    query: (text, params) => pool.query(text, params)
 }; 
