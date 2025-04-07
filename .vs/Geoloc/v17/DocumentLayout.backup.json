@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\pc\\source\\repos\\Geoloc\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{3F270C68-4AF6-4728-9837-097BE1126C57}|Geoloc\\Geoloc.njsproj|C:\\Users\\pc\\source\\repos\\Geoloc\\Geoloc\\app.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{3F270C68-4AF6-4728-9837-097BE1126C57}|Geoloc\\Geoloc.njsproj|solutionrelative:Geoloc\\app.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "app.js",
+              "DocumentMoniker": "C:\\Users\\pc\\source\\repos\\Geoloc\\Geoloc\\app.js",
+              "RelativeDocumentMoniker": "Geoloc\\app.js",
+              "ToolTip": "C:\\Users\\pc\\source\\repos\\Geoloc\\Geoloc\\app.js",
+              "RelativeToolTip": "Geoloc\\app.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-03-21T12:32:53.089Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
