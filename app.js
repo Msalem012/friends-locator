@@ -1,20 +1,17 @@
 'use strict';
-var debug = require('debug')('my express app');
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var session = require('express-session');
+const express = require('express');
+const path = require('path');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
 require('dotenv').config();
 
-var routes = require('./routes/index');
-var users = require('./routes/users');
-var auth = require('./routes/auth');
-var api = require('./routes/api');
+const routes = require('./routes/index');
+const users = require('./routes/users');
+const auth = require('./routes/auth');
+const api = require('./routes/api');
 
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,8 +20,11 @@ app.set('view engine', 'ejs');
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Trust first proxy for secure cookies in production
+app.set('trust proxy', 1);
 
 // Session configuration
 const sessionConfig = {
@@ -35,12 +35,25 @@ const sessionConfig = {
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours
+        sameSite: 'lax'
     }
 };
 
+// In production, ensure secure cookies
+if (app.get('env') === 'production') {
+    sessionConfig.cookie.secure = true;
+}
+
 app.use(cookieParser(sessionConfig.secret));
 app.use(session(sessionConfig));
+
+// Debug middleware to log session data
+app.use((req, res, next) => {
+    console.log('Session ID:', req.sessionID);
+    console.log('Session Data:', req.session);
+    next();
+});
 
 // Make user data available to templates
 app.use((req, res, next) => {
@@ -51,17 +64,16 @@ app.use((req, res, next) => {
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Authentication routes
-app.use('/auth', auth);
+// Authentication middleware
+const ensureAuthenticated = (req, res, next) => {
+    console.log('Checking auth:', req.session);
+    if (req.session && req.session.user) {
+        return next();
+    }
+    res.redirect('/login');
+};
 
-// API routes
-app.use('/api', api);
-
-// Protected routes
-app.use('/', routes);
-app.use('/users', users);
-
-// Login and register page routes
+// Public routes
 app.get('/login', (req, res) => {
     if (req.session.user) {
         return res.redirect('/');
@@ -76,19 +88,25 @@ app.get('/register', (req, res) => {
     res.render('register', { error: null });
 });
 
+// Auth routes
+app.use('/auth', auth);
+
+// Protected routes
+app.use('/', ensureAuthenticated, routes);
+app.use('/users', ensureAuthenticated, users);
+app.use('/api', ensureAuthenticated, api);
+
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
-    var err = new Error('Not Found');
+app.use((req, res, next) => {
+    const err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
 
 // error handlers
-
-// development error handler
-// will print stacktrace
 if (app.get('env') === 'development') {
-    app.use(function (err, req, res, next) {
+    app.use((err, req, res, next) => {
+        console.error(err);
         res.status(err.status || 500);
         res.render('error', {
             message: err.message,
@@ -97,9 +115,8 @@ if (app.get('env') === 'development') {
     });
 }
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function (err, req, res, next) {
+app.use((err, req, res, next) => {
+    console.error(err);
     res.status(err.status || 500);
     res.render('error', {
         message: err.message,
@@ -107,8 +124,7 @@ app.use(function (err, req, res, next) {
     });
 });
 
-app.set('port', process.env.PORT || 3000);
-
-var server = app.listen(app.get('port'), function () {
-    debug('Express server listening on port ' + server.address().port);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });

@@ -9,6 +9,7 @@ router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
         
+        console.log('Registration attempt for:', email);
         await client.query('BEGIN');
 
         // Check if user already exists
@@ -21,8 +22,10 @@ router.post('/register', async (req, res) => {
             await client.query('ROLLBACK');
             const existingUser = userCheck.rows[0];
             if (existingUser.email === email) {
+                console.log('Registration failed: Email already exists');
                 return res.render('register', { error: 'Email already registered' });
             } else {
+                console.log('Registration failed: Username already exists');
                 return res.render('register', { error: 'Username already taken' });
             }
         }
@@ -49,16 +52,22 @@ router.post('/register', async (req, res) => {
         // Save session explicitly
         await new Promise((resolve, reject) => {
             req.session.save(err => {
-                if (err) reject(err);
-                else resolve();
+                if (err) {
+                    console.error('Session save error:', err);
+                    reject(err);
+                } else {
+                    console.log('Session saved successfully');
+                    resolve();
+                }
             });
         });
 
-        res.redirect('/');
+        console.log('Registration successful for:', email);
+        return res.redirect('/');
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Registration error:', error);
-        res.render('register', { error: 'Registration failed. Please try again.' });
+        return res.render('register', { error: 'Registration failed. Please try again.' });
     } finally {
         client.release();
     }
@@ -69,10 +78,12 @@ router.post('/login', async (req, res) => {
     const client = await db.pool.connect();
     try {
         const { email, password } = req.body;
+        console.log('Login attempt for:', email);
 
         // Check if user exists
         const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
         if (result.rows.length === 0) {
+            console.log('Login failed: User not found');
             return res.render('login', { error: 'Invalid email or password' });
         }
 
@@ -81,6 +92,7 @@ router.post('/login', async (req, res) => {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('Login failed: Invalid password');
             return res.render('login', { error: 'Invalid email or password' });
         }
 
@@ -94,15 +106,21 @@ router.post('/login', async (req, res) => {
         // Save session explicitly
         await new Promise((resolve, reject) => {
             req.session.save(err => {
-                if (err) reject(err);
-                else resolve();
+                if (err) {
+                    console.error('Session save error:', err);
+                    reject(err);
+                } else {
+                    console.log('Session saved successfully');
+                    resolve();
+                }
             });
         });
 
-        res.redirect('/');
+        console.log('Login successful for:', email);
+        return res.redirect('/');
     } catch (error) {
         console.error('Login error:', error);
-        res.render('login', { error: 'Login failed. Please try again.' });
+        return res.render('login', { error: 'Login failed. Please try again.' });
     } finally {
         client.release();
     }
@@ -110,12 +128,14 @@ router.post('/login', async (req, res) => {
 
 // Logout route
 router.post('/logout', (req, res) => {
+    console.log('Logout attempt for user:', req.session.user?.email);
     req.session.destroy((err) => {
         if (err) {
             console.error('Logout error:', err);
             return res.redirect('/?error=logout_failed');
         }
         res.clearCookie('connect.sid');
+        console.log('Logout successful');
         res.redirect('/login');
     });
 });
