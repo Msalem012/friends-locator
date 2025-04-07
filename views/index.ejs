@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" style="font-size: 1.25rem; font-weight: bold;">Geoloc</a>
+            <div style="float: right;">
+                <% if (locals.user) { %>
+                    <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
+                    <form action="/auth/logout" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">Logout</button>
+                    </form>
+                <% } else { %>
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1><%= title %></h1>
+        <p>Welcome to <%= title %></p>
+        
+        <% if (!locals.user) { %>
+            <div style="margin-top: 2rem;">
+                <h2>Get Started</h2>
+                <p>Please <a href="/login">login</a> or <a href="/register">register</a> to continue.</p>
+            </div>
+        <% } %>
+    </div>
+</body>
+</html> 

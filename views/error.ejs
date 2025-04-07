@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .error-title {
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .error-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1 class="error-title">Error</h1>
+        <div class="error-message">
+            <h2><%= message %></h2>
+        </div>
+        <% if (error && error.status) { %>
+            <div class="error-details">
+                <strong>Status:</strong> <%= error.status %>
+                <% if (error.stack) { %>
+                    <pre><%= error.stack %></pre>
+                <% } %>
+            </div>
+        <% } %>
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</body>
+</html> 

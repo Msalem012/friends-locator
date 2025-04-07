@@ -1,0 +1,3 @@
+C:\Users\pc\source\repos\Geoloc\Geoloc\obj\Debug\Geoloc.njsproj.AssemblyReference.cache
+C:\Users\pc\source\repos\Geoloc\Geoloc\obj\Debug\Geoloc.njsproj.CoreCompileInputs.cache
+C:\Users\pc\source\repos\Geoloc\Geoloc\bin\Microsoft.NodejsTools.WebRole.dll
