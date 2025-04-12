@@ -7,12 +7,11 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
-        // Use the original octopus SVG icon
         const customIcon = L.icon({
             iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
-            iconSize: [38, 38],
-            iconAnchor: [19, 38],
-            popupAnchor: [0, -35],
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
             className: 'custom-marker-class'
         });
 
@@ -278,89 +277,30 @@ class MarkerManager {
         this.currentUserMarker = null;
     }
 
-    // Create icon for a marker
-    createMarkerIcon(isCurrentUser) {
-        if (isCurrentUser) {
-            // Use the octopus icon for the current user
-            return L.icon({
-                iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
-                iconSize: [38, 38],
-                iconAnchor: [19, 38],
-                popupAnchor: [0, -35],
-                className: 'current-user-marker'
-            });
-        } else {
-            // Use a different color octopus for other users
-            return L.icon({
-                iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32],
-                className: 'other-user-marker'
-            });
-        }
-    }
-
     // Add a new marker
     addMarker(userId, latitude, longitude, username, isCurrentUser = false) {
         // Remove existing marker for this user if it exists
         this.removeMarker(userId);
         
-        // Get the right marker icon
-        const customIcon = this.createMarkerIcon(isCurrentUser);
+        // Create new marker
+        const marker = new CustomMarker(this.map, latitude, longitude, username);
         
-        // Create marker with the icon
-        const marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
-        
-        // Add popup with username
-        marker.bindPopup(`<b>${username}</b>`);
-        
-        // Create our marker object
-        const customMarker = new Object();
-        customMarker.map = this.map;
-        customMarker.marker = marker;
-        customMarker.latitude = latitude;
-        customMarker.longitude = longitude;
-        customMarker.username = username;
-        customMarker.isCurrentUser = isCurrentUser;
-        customMarker.trailVisible = false;
-        
-        // Add methods to the marker object
-        customMarker.updateLocation = function(lat, lng) {
-            this.latitude = lat;
-            this.longitude = lng;
-            this.marker.setLatLng([lat, lng]);
-            this.marker.setPopupContent(`<b>${this.username}</b>`);
-        };
-        
-        customMarker.updateUsername = function(newUsername) {
-            this.username = newUsername;
-            this.marker.setPopupContent(`<b>${this.username}</b>`);
-        };
-        
-        customMarker.remove = function() {
-            if (this.marker && this.map) {
-                this.map.removeLayer(this.marker);
-            }
-            
-            if (this.trailLine && this.map) {
-                this.map.removeLayer(this.trailLine);
-            }
-        };
+        // Store if this is the current user
+        marker.isCurrentUser = isCurrentUser;
         
         // Enable trail for current user only
-        customMarker.shouldShowTrail = isCurrentUser;
+        marker.shouldShowTrail = isCurrentUser;
         
         // Store in our collection
-        this.markers.set(userId, customMarker);
+        this.markers.set(userId, marker);
         
         // If this is the current user, store a reference and start tracking
         if (isCurrentUser) {
-            this.currentUserMarker = customMarker;
-            trackUserLocation(customMarker);
+            this.currentUserMarker = marker;
+            trackUserLocation(marker);
         }
         
-        return customMarker;
+        return marker;
     }
 
     // Update an existing marker
