@@ -5,6 +5,7 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 require('dotenv').config();
+const http = require('http');
 
 const routes = require('./routes/index');
 const users = require('./routes/users');
@@ -78,14 +79,19 @@ app.get('/login', (req, res) => {
     if (req.session.user) {
         return res.redirect('/');
     }
-    res.render('login', { error: null });
+    res.render('login', { title: 'Login', error: null });
 });
 
 app.get('/register', (req, res) => {
     if (req.session.user) {
         return res.redirect('/');
     }
-    res.render('register', { error: null });
+    res.render('register', { title: 'Register', error: null });
+});
+
+// Map route
+app.get('/map', ensureAuthenticated, (req, res) => {
+    res.render('map', { title: 'Geoloc Map', user: req.session.user });
 });
 
 // Auth routes
@@ -124,7 +130,22 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Set up Socket.IO server if the module is available
+try {
+    const setupSocketServer = require('./socket-server');
+    const io = setupSocketServer(server);
+    console.log('Socket.IO server initialized');
+} catch (error) {
+    console.error('Failed to initialize Socket.IO:', error.message);
+    console.log('Continuing without real-time functionality');
+}
+
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+module.exports = app;

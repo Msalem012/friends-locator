@@ -23,10 +23,10 @@ router.post('/register', async (req, res) => {
             const existingUser = userCheck.rows[0];
             if (existingUser.email === email) {
                 console.log('Registration failed: Email already exists');
-                return res.render('register', { error: 'Email already registered' });
+                return res.render('register', { title: 'Register', error: 'Email already registered' });
             } else {
                 console.log('Registration failed: Username already exists');
-                return res.render('register', { error: 'Username already taken' });
+                return res.render('register', { title: 'Register', error: 'Username already taken' });
             }
         }
 
@@ -67,7 +67,7 @@ router.post('/register', async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Registration error:', error);
-        return res.render('register', { error: 'Registration failed. Please try again.' });
+        return res.render('register', { title: 'Register', error: 'Registration failed. Please try again.' });
     } finally {
         client.release();
     }
@@ -77,14 +77,14 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const client = await db.pool.connect();
     try {
-        const { email, password } = req.body;
-        console.log('Login attempt for:', email);
+        const { username, password } = req.body;
+        console.log('Login attempt for:', username);
 
         // Check if user exists
-        const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+        const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
         if (result.rows.length === 0) {
             console.log('Login failed: User not found');
-            return res.render('login', { error: 'Invalid email or password' });
+            return res.render('login', { title: 'Login', error: 'Invalid username or password' });
         }
 
         const user = result.rows[0];
@@ -93,7 +93,7 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             console.log('Login failed: Invalid password');
-            return res.render('login', { error: 'Invalid email or password' });
+            return res.render('login', { title: 'Login', error: 'Invalid username or password' });
         }
 
         // Set session
@@ -116,11 +116,11 @@ router.post('/login', async (req, res) => {
             });
         });
 
-        console.log('Login successful for:', email);
+        console.log('Login successful for:', username);
         return res.redirect('/');
     } catch (error) {
         console.error('Login error:', error);
-        return res.render('login', { error: 'Login failed. Please try again.' });
+        return res.render('login', { title: 'Login', error: 'Login failed. Please try again.' });
     } finally {
         client.release();
     }

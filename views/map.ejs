@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>Geoloc - Map Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
@@ -12,7 +14,7 @@
         }
         .navbar {
             background-color: #343a40;
-            padding: 1rem;
+            padding: 0.5rem 1rem;
             color: white;
             height: 60px;
             box-sizing: border-box;
@@ -21,8 +23,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
         }
         .navbar a {
             color: white;
@@ -37,18 +38,164 @@
             align-items: center;
         }
         .user-controls form {
-            margin-left: 1rem;
+            margin-left: 0.5rem;
         }
         .btn-logout {
             background-color: #dc3545;
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.75rem;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 0.9rem;
         }
         .btn-logout:hover {
             background-color: #c82333;
+        }
+        .map-controls {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            z-index: 1000;
+            background: transparent;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .map-controls button {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+        .map-controls button#centerButton {
+            background: rgba(13, 110, 253, 0.85);
+        }
+        .map-controls button#toggleTrailButton {
+            background: rgba(33, 37, 41, 0.8);
+        }
+        .map-controls button:last-child {
+            margin-bottom: 0;
+        }
+        .map-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .map-controls button#centerButton:hover {
+            background: rgba(13, 110, 253, 0.95);
+        }
+        .map-controls button#toggleTrailButton:hover {
+            background: rgba(33, 37, 41, 0.9);
+        }
+        .map-controls button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .custom-marker-class {
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+        }
+        .online-users {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            max-width: 250px;
+            max-height: 200px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .online-users:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+        .online-users h3 {
+            margin-top: 0;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            color: #343a40;
+            font-weight: 600;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .user-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        .user-list li:last-child {
+            border-bottom: none;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #28a745;
+            margin-right: 5px;
+            box-shadow: 0 0 4px rgba(40, 167, 69, 0.5);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 576px) {
+            .navbar {
+                padding: 0.5rem;
+            }
+            .navbar-content {
+                flex-wrap: nowrap;
+            }
+            .user-controls span {
+                display: none; /* Hide "Welcome, username" on very small screens */
+            }
+            .user-controls form {
+                margin-left: 0.25rem;
+            }
+            .btn-logout {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            .map-controls {
+                top: unset;
+                bottom: 20px;
+                right: 10px;
+                max-width: 130px;
+            }
+            .map-controls button {
+                padding: 7px 10px;
+                font-size: 0.85rem;
+            }
+            .online-users {
+                bottom: 20px;
+                left: 10px;
+                max-width: 150px;
+                max-height: 150px;
+                padding: 10px;
+            }
+            .online-users h3 {
+                font-size: 14px;
+                padding-bottom: 6px;
+                margin-bottom: 6px;
+            }
+            .user-list li {
+                font-size: 0.8rem;
+                padding: 4px 0;
+            }
         }
     </style>
 </head>
@@ -60,7 +207,7 @@
             </div>
             <div class="user-controls">
                 <% if (user) { %>
-                    <span>Welcome, <%= user.username %></span>
+                    <span class="d-none d-sm-inline">Welcome, <%= user.username %></span>
                     <form action="/auth/logout" method="POST" style="display: inline;">
                         <button type="submit" class="btn-logout">Logout</button>
                     </form>
@@ -70,9 +217,43 @@
     </nav>
 
     <div id="map"></div>
+    
+    <div class="map-controls">
+        <button id="centerButton" class="btn btn-sm">Center on Me</button>
+        <button id="toggleTrailButton" class="btn btn-sm">Toggle Trail</button>
+    </div>
+    
+    <div class="online-users">
+        <h3>Online Users</h3>
+        <ul id="userList" class="user-list">
+            <li>Loading users...</li>
+        </ul>
+    </div>
+
+    <!-- Store user data for JavaScript -->
+    <% if (user) { %>
+        <div id="userData" data-user='<%= JSON.stringify(user) %>' style="display: none;"></div>
+    <% } %>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/javascripts/map-markers.js"></script>
     <script>
+        // Get user data
+        let userId = null;
+        let username = null;
+        const userDataElement = document.getElementById('userData');
+        if (userDataElement) {
+            try {
+                const userData = JSON.parse(userDataElement.dataset.user);
+                userId = userData.id;
+                username = userData.username;
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+            }
+        }
+        
         // Initialize the map
         const map = L.map('map').setView([0, 0], 2);
         
@@ -81,24 +262,179 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-
-        // Get user's location
+        
+        // Initialize marker manager
+        const markerManager = new MarkerManager(map);
+        
+        // Initialize Socket.IO
+        let socket = null;
+        try {
+            socket = io();
+            window.socket = socket;
+            
+            // Handle connection
+            socket.on('connect', () => {
+                console.log('Connected to Socket.IO server');
+                
+                // Send user data on connection
+                if (userId && username) {
+                    socket.emit('user_connected', {
+                        userId: userId,
+                        username: username
+                    });
+                }
+            });
+            
+            // Handle active users list
+            socket.on('active_users', (users) => {
+                console.log('Received active users:', users);
+                updateUsersList(users);
+                
+                // Update markers for all active users
+                users.forEach(user => {
+                    // Skip users without location
+                    if (!user.location) return;
+                    
+                    const { latitude, longitude } = user.location;
+                    const isCurrentUser = user.userId === userId;
+                    
+                    // Check if user already has a marker
+                    const existingMarker = markerManager.markers.get(user.userId);
+                    if (existingMarker) {
+                        markerManager.updateMarker(user.userId, latitude, longitude, user.username);
+                    } else {
+                        markerManager.addMarker(user.userId, latitude, longitude, user.username, isCurrentUser);
+                    }
+                });
+            });
+            
+            // Handle user location updates
+            socket.on('user_location_updated', (data) => {
+                const { userId, username, location } = data;
+                
+                // Skip if no location
+                if (!location) return;
+                
+                const { latitude, longitude } = location;
+                
+                // Update marker for this user
+                const existingMarker = markerManager.markers.get(userId);
+                if (existingMarker) {
+                    markerManager.updateMarker(userId, latitude, longitude, username);
+                } else {
+                    const isCurrentUser = userId === window.userId;
+                    markerManager.addMarker(userId, latitude, longitude, username, isCurrentUser);
+                }
+            });
+            
+            // Handle user disconnection
+            socket.on('user_disconnected', (data) => {
+                console.log('User disconnected:', data);
+                
+                // Remove marker for this user
+                markerManager.removeMarker(data.userId);
+                
+                // Update users list
+                const userItem = document.querySelector(`#userList li[data-id="${data.userId}"]`);
+                if (userItem) {
+                    userItem.remove();
+                }
+                
+                // If the list is empty, show a message
+                const userList = document.getElementById('userList');
+                if (userList.children.length === 0) {
+                    userList.innerHTML = '<li>No users online</li>';
+                }
+            });
+            
+            // Handle disconnection
+            socket.on('disconnect', () => {
+                console.log('Disconnected from Socket.IO server');
+                markerManager.clearOtherMarkers();
+                document.getElementById('userList').innerHTML = '<li>Connection lost</li>';
+            });
+            
+        } catch (error) {
+            console.error('Socket.IO initialization error:', error);
+            alert('Real-time features are not available. Please refresh the page to try again.');
+        }
+        
+        // Get user's location and add marker
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
+                    
+                    // Center map on user's location
                     map.setView([latitude, longitude], 13);
                     
-                    // Add marker for current location
-                    L.marker([latitude, longitude])
-                        .addTo(map)
-                        .bindPopup('Your current location')
-                        .openPopup();
+                    // Add marker for current user
+                    if (userId && username) {
+                        markerManager.addMarker(userId, latitude, longitude, username, true);
+                        
+                        // Send initial location to server
+                        if (socket) {
+                            socket.emit('location_update', {
+                                userId: userId,
+                                latitude: latitude,
+                                longitude: longitude
+                            });
+                        }
+                    }
                 },
                 (error) => {
                     console.error('Error getting location:', error);
+                    showLocationError(error);
                 }
             );
+        }
+        
+        // Center button functionality
+        document.getElementById('centerButton').addEventListener('click', () => {
+            if (markerManager.currentUserMarker) {
+                const { latitude, longitude } = markerManager.currentUserMarker;
+                map.setView([latitude, longitude], 13);
+            } else {
+                alert('Your location is not available');
+            }
+        });
+        
+        // Toggle trail button functionality
+        document.getElementById('toggleTrailButton').addEventListener('click', () => {
+            if (markerManager.currentUserMarker) {
+                if (markerManager.currentUserMarker.trailVisible) {
+                    markerManager.currentUserMarker.hideTrail();
+                    document.getElementById('toggleTrailButton').textContent = 'Show Trail';
+                } else {
+                    markerManager.currentUserMarker.showTrail();
+                    document.getElementById('toggleTrailButton').textContent = 'Hide Trail';
+                }
+            } else {
+                alert('Your location is not available');
+            }
+        });
+        
+        // Function to update the users list
+        function updateUsersList(users) {
+            const userList = document.getElementById('userList');
+            
+            if (!users || users.length === 0) {
+                userList.innerHTML = '<li>No users online</li>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                html += `
+                    <li data-id="${user.userId}">
+                        <span class="status-dot"></span>
+                        <strong>${user.username || 'Anonymous'}</strong>
+                        ${user.userId === userId ? ' (You)' : ''}
+                    </li>
+                `;
+            });
+            
+            userList.innerHTML = html;
         }
     </script>
 </body>
