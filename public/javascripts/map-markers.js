@@ -56,47 +56,144 @@ class CustomMarker {
 function trackUserLocation(customMarker) {
     if (navigator.geolocation) {
         let trailStarted = false;
-        
-        navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
+        let watchId = null;
+        let locationErrorCount = 0;
+        let lastReportTime = 0;
+        const minReportInterval = 2000; // Minimum time between location reports in milliseconds
 
-                // Update marker location
-                customMarker.updateLocation(latitude, longitude);
-                
-                // Center map on user if this is their own marker
-                if (customMarker.isCurrentUser) {
-                    customMarker.map.setView([latitude, longitude], 13);
-                }
-                
-                // Emit location update via Socket.IO if connected
-                if (window.socket && userId) {
-                    window.socket.emit('location_update', {
-                        userId: userId,
-                        latitude: latitude,
-                        longitude: longitude
-                    });
-                }
-                
-                // Start drawing trail after a delay
-                if (!trailStarted && customMarker.shouldShowTrail) {
-                    trailStarted = true;
-                    setTimeout(() => {
-                        drawFilteredTrail(customMarker);
-                        console.log("Trail drawing started");
-                    }, 5000);
-                }
-            },
-            (error) => {
-                console.error('Error getting location:', error);
-                showLocationError(error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+        // Function to start location tracking
+        function startTracking() {
+            // Clear existing watch if any
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
             }
-        );
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    // Reset error count on successful position
+                    locationErrorCount = 0;
+                    
+                    const { latitude, longitude, accuracy } = position.coords;
+                    const now = Date.now();
+                    
+                    // Don't update too frequently to save battery
+                    if (now - lastReportTime < minReportInterval) {
+                        return;
+                    }
+                    
+                    // Only use location updates with reasonable accuracy
+                    if (accuracy > 100) {
+                        console.log("Skipping low accuracy location:", accuracy, "meters");
+                        return;
+                    }
+                    
+                    lastReportTime = now;
+
+                    // Update marker location
+                    customMarker.updateLocation(latitude, longitude);
+                    
+                    // Emit location update via Socket.IO if connected
+                    if (window.socket && window.socket.connected && userId) {
+                        window.socket.emit('location_update', {
+                            userId: userId,
+                            latitude: latitude,
+                            longitude: longitude,
+                            timestamp: now
+                        });
+                    }
+                    
+                    // Start drawing trail after a delay
+                    if (!trailStarted && customMarker.shouldShowTrail) {
+                        trailStarted = true;
+                        setTimeout(() => {
+                            drawFilteredTrail(customMarker);
+                            console.log("Trail drawing started");
+                        }, 5000);
+                    }
+                },
+                (error) => {
+                    locationErrorCount++;
+                    console.error('Error getting location:', error, 'Count:', locationErrorCount);
+                    
+                    // Show error only on first occurrence
+                    if (locationErrorCount === 1) {
+                        showLocationError(error);
+                    }
+                    
+                    // If we get repeated errors, try restarting after a delay
+                    if (locationErrorCount >= 3) {
+                        console.log("Multiple location errors, restarting tracking...");
+                        setTimeout(() => {
+                            startTracking();
+                        }, 10000); // Wait 10 seconds before trying again
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // Start tracking immediately
+        startTracking();
+        
+        // Setup ping interval to ensure server knows we're still online
+        const pingInterval = setInterval(() => {
+            if (window.socket && window.socket.connected && userId) {
+                window.socket.emit('user_ping', { userId: userId });
+            }
+        }, 30000); // Every 30 seconds
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log("Page is visible again, resuming tracking");
+                // Restart tracking when page becomes visible again
+                startTracking();
+                
+                // Force an immediate location check
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const { latitude, longitude } = position.coords;
+                            customMarker.updateLocation(latitude, longitude);
+                            
+                            // Emit location update
+                            if (window.socket && window.socket.connected && userId) {
+                                window.socket.emit('location_update', {
+                                    userId: userId,
+                                    latitude: latitude,
+                                    longitude: longitude,
+                                    timestamp: Date.now()
+                                });
+                            }
+                        },
+                        (error) => console.error('Error getting location on visibility change:', error),
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                }
+            }
+        });
+        
+        // Handle beforeunload event
+        window.addEventListener('beforeunload', () => {
+            // Clear tracking
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+            clearInterval(pingInterval);
+            
+            // Try to send a final position update
+            if (window.socket && window.socket.connected && userId) {
+                window.socket.emit('user_disconnecting', { 
+                    userId: userId,
+                    lastLatitude: customMarker.latitude,
+                    lastLongitude: customMarker.longitude
+                });
+            }
+        });
         
         return true;
     } else {

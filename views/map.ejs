@@ -151,6 +151,28 @@
             margin-right: 5px;
             box-shadow: 0 0 4px rgba(40, 167, 69, 0.5);
         }
+        .tracking-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #198754;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+            vertical-align: middle;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        .tracking-badge.inactive {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            animation: none;
+        }
         
         /* Mobile optimizations */
         @media (max-width: 576px) {
@@ -224,7 +246,7 @@
     </div>
     
     <div class="online-users">
-        <h3>Online Users</h3>
+        <h3>Online Users <span id="trackingStatus" class="tracking-badge">Tracking Active</span></h3>
         <ul id="userList" class="user-list">
             <li>Loading users...</li>
         </ul>
@@ -377,7 +399,8 @@
                             socket.emit('location_update', {
                                 userId: userId,
                                 latitude: latitude,
-                                longitude: longitude
+                                longitude: longitude,
+                                timestamp: Date.now()
                             });
                         }
                     }
@@ -385,8 +408,22 @@
                 (error) => {
                     console.error('Error getting location:', error);
                     showLocationError(error);
+                    
+                    // Update tracking badge to show inactive
+                    const trackingStatus = document.getElementById('trackingStatus');
+                    if (trackingStatus) {
+                        trackingStatus.textContent = 'Tracking Inactive';
+                        trackingStatus.classList.add('inactive');
+                    }
                 }
             );
+        } else {
+            // Update tracking badge to show inactive
+            const trackingStatus = document.getElementById('trackingStatus');
+            if (trackingStatus) {
+                trackingStatus.textContent = 'Tracking Inactive';
+                trackingStatus.classList.add('inactive');
+            }
         }
         
         // Center button functionality
@@ -435,6 +472,25 @@
             });
             
             userList.innerHTML = html;
+        }
+
+        // Update tracking status when socket connection changes
+        if (socket) {
+            socket.on('connect', () => {
+                const trackingStatus = document.getElementById('trackingStatus');
+                if (trackingStatus) {
+                    trackingStatus.textContent = 'Tracking Active';
+                    trackingStatus.classList.remove('inactive');
+                }
+            });
+            
+            socket.on('disconnect', () => {
+                const trackingStatus = document.getElementById('trackingStatus');
+                if (trackingStatus) {
+                    trackingStatus.textContent = 'Connection Lost';
+                    trackingStatus.classList.add('inactive');
+                }
+            });
         }
     </script>
 </body>

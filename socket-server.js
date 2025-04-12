@@ -4,10 +4,14 @@ const socketIO = require('socket.io');
 const activeUsers = new Map();
 
 function setupSocketServer(server) {
-  const io = socketIO(server);
+  const io = socketIO(server, {
+    pingTimeout: 60000, // Increase ping timeout to 60 seconds
+    pingInterval: 25000 // Set ping interval to 25 seconds
+  });
   
   io.on('connection', (socket) => {
     console.log('New client connected', socket.id);
+    let associatedUserId = null;
     
     // When a user connects and sends their initial data
     socket.on('user_connected', (userData) => {
@@ -18,23 +22,50 @@ function setupSocketServer(server) {
         return;
       }
       
-      // Store user data
-      activeUsers.set(userId, {
-        socketId: socket.id,
-        username: username || 'Anonymous',
-        location: location || null,
-        lastUpdated: Date.now()
-      });
+      // Store associated userId for this socket
+      associatedUserId = userId;
+      
+      // Check if user already exists (might be a reconnect)
+      const existingUser = activeUsers.get(userId);
+      if (existingUser) {
+        // Update socket ID for existing user
+        existingUser.socketId = socket.id;
+        existingUser.lastUpdated = Date.now();
+        activeUsers.set(userId, existingUser);
+        console.log(`User ${username || 'Anonymous'} (${userId}) reconnected`);
+      } else {
+        // Store new user data
+        activeUsers.set(userId, {
+          socketId: socket.id,
+          username: username || 'Anonymous',
+          location: location || null,
+          lastUpdated: Date.now(),
+          connectionTime: Date.now()
+        });
+        console.log(`User ${username || 'Anonymous'} (${userId}) connected`);
+      }
       
       // Broadcast updated active users list to all clients
       broadcastActiveUsers(io);
+    });
+    
+    // Handle user ping to keep them active
+    socket.on('user_ping', (data) => {
+      const { userId } = data;
       
-      console.log(`User ${username || 'Anonymous'} (${userId}) connected`);
+      if (!userId || !activeUsers.has(userId)) {
+        return;
+      }
+      
+      // Update last updated timestamp
+      const userData = activeUsers.get(userId);
+      userData.lastUpdated = Date.now();
+      activeUsers.set(userId, userData);
     });
     
     // When a user updates their location
     socket.on('location_update', (data) => {
-      const { userId, latitude, longitude } = data;
+      const { userId, latitude, longitude, timestamp } = data;
       
       if (!userId || !activeUsers.has(userId)) {
         console.error('Location update for unknown user:', userId);
@@ -44,7 +75,7 @@ function setupSocketServer(server) {
       // Update user location
       const userData = activeUsers.get(userId);
       userData.location = { latitude, longitude };
-      userData.lastUpdated = Date.now();
+      userData.lastUpdated = timestamp || Date.now();
       activeUsers.set(userId, userData);
       
       // Broadcast updated user location to all clients
@@ -55,17 +86,57 @@ function setupSocketServer(server) {
       });
     });
     
+    // Handle explicit user disconnection (browser closing/navigating away)
+    socket.on('user_disconnecting', (data) => {
+      const { userId, lastLatitude, lastLongitude } = data;
+      
+      if (userId && activeUsers.has(userId)) {
+        // Update last known location before disconnect, if provided
+        if (lastLatitude && lastLongitude) {
+          const userData = activeUsers.get(userId);
+          userData.location = { latitude: lastLatitude, longitude: lastLongitude };
+          userData.lastUpdated = Date.now();
+          userData.disconnecting = true; // Mark as explicitly disconnecting
+          activeUsers.set(userId, userData);
+          
+          // Don't remove the user immediately, let the inactivity timer handle it
+          console.log(`User ${userData.username} (${userId}) sent disconnect signal, keeping location for a while`);
+        }
+      }
+    });
+    
     // When user disconnects
     socket.on('disconnect', () => {
-      // Find and remove the disconnected user
-      for (const [userId, userData] of activeUsers.entries()) {
-        if (userData.socketId === socket.id) {
-          activeUsers.delete(userId);
-          console.log(`User ${userData.username} (${userId}) disconnected`);
+      // If we stored the userId for this socket, use it
+      if (associatedUserId && activeUsers.has(associatedUserId)) {
+        const userData = activeUsers.get(associatedUserId);
+        
+        // Only delete if user has explicitly disconnected
+        // Otherwise, keep them in the list for reconnection
+        if (userData.disconnecting) {
+          activeUsers.delete(associatedUserId);
+          console.log(`User ${userData.username} (${associatedUserId}) disconnected and removed`);
           
           // Inform all clients that a user has disconnected
-          io.emit('user_disconnected', { userId });
-          break;
+          io.emit('user_disconnected', { userId: associatedUserId });
+        } else {
+          console.log(`User ${userData.username} (${associatedUserId}) socket disconnected, keeping user active for possible reconnect`);
+          // Mark socket as disconnected but keep the user data
+          userData.socketConnected = false;
+          userData.lastDisconnect = Date.now();
+          activeUsers.set(associatedUserId, userData);
+        }
+      } else {
+        // If we don't have the userId, use the old method
+        for (const [userId, userData] of activeUsers.entries()) {
+          if (userData.socketId === socket.id) {
+            // Instead of deleting right away, mark as disconnected
+            userData.socketConnected = false;
+            userData.lastDisconnect = Date.now();
+            activeUsers.set(userId, userData);
+            console.log(`User ${userData.username} (${userId}) socket disconnected, keeping user active for possible reconnect`);
+            break;
+          }
         }
       }
       
@@ -74,15 +145,19 @@ function setupSocketServer(server) {
     });
   });
   
-  // Set up periodic cleanup of inactive users (5 minutes timeout)
+  // Set up periodic cleanup of inactive users (15 minutes timeout)
   setInterval(() => {
     const now = Date.now();
-    const timeoutThreshold = 5 * 60 * 1000; // 5 minutes
+    const timeoutThreshold = 15 * 60 * 1000; // 15 minutes
+    const shortTimeoutThreshold = 2 * 60 * 1000; // 2 minutes for explicitly disconnecting users
     
     for (const [userId, userData] of activeUsers.entries()) {
-      if (now - userData.lastUpdated > timeoutThreshold) {
+      // Use shorter timeout for users that explicitly disconnected
+      const threshold = userData.disconnecting ? shortTimeoutThreshold : timeoutThreshold;
+      
+      if (now - userData.lastUpdated > threshold) {
         activeUsers.delete(userId);
-        console.log(`User ${userData.username} (${userId}) removed due to inactivity`);
+        console.log(`User ${userData.username} (${userId}) removed due to inactivity after ${threshold/60000} minutes`);
         
         // Inform all clients that a user has been removed
         io.emit('user_disconnected', { userId });
@@ -104,7 +179,9 @@ function broadcastActiveUsers(io) {
     usersArray.push({
       userId,
       username: userData.username,
-      location: userData.location
+      location: userData.location,
+      // Include additional status info that might be useful for clients
+      active: (Date.now() - userData.lastUpdated) < 5 * 60 * 1000
     });
   }
   
