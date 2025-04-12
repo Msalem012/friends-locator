@@ -98,16 +98,17 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
         .custom-marker-class {
-            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
         }
         .animal-marker {
             filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.4));
         }
         .current-user-marker {
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6));
             z-index: 1000 !important;
         }
         .other-user-marker {
+            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.4));
             z-index: 900 !important;
         }
         /* Ensure animal markers display properly */
@@ -119,13 +120,7 @@
         }
         /* Fix for marker image invisibility */
         .leaflet-marker-icon {
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 900 !important;
-        }
-        /* Make current user marker appear on top */
-        .current-user-marker {
-            z-index: 1000 !important; 
+            z-index: 800 !important;
         }
         /* Enable marker animations */
         @keyframes pulse-marker {
@@ -309,7 +304,6 @@
     <div class="map-controls">
         <button id="centerButton" class="btn btn-sm">Center on Me</button>
         <button id="toggleTrailButton" class="btn btn-sm">Toggle Trail</button>
-        <button id="debugMarkerButton" class="btn btn-sm" style="background: rgba(220, 53, 69, 0.85);">Fix My Marker</button>
     </div>
     
     <div class="online-users">
@@ -500,17 +494,7 @@
                     
                     // Add marker for current user
                     if (userId && username) {
-                        console.log("Creating initial marker for current user:", username);
                         const currentUserMarker = markerManager.addMarker(userId, latitude, longitude, username, true);
-                        
-                        // Make sure the marker is displayed
-                        setTimeout(() => {
-                            if (currentUserMarker && currentUserMarker.marker) {
-                                console.log("Forcing marker visibility");
-                                currentUserMarker.marker.openPopup();
-                                setTimeout(() => currentUserMarker.marker.closePopup(), 500);
-                            }
-                        }, 1000);
                         
                         // Send initial location to server
                         if (socket) {
@@ -571,66 +555,6 @@
                 }
             } else {
                 alert('Your location is not available');
-            }
-        });
-        
-        // Add debug button functionality 
-        document.getElementById('debugMarkerButton').addEventListener('click', () => {
-            if (markerManager.currentUserMarker) {
-                console.log("Debug: Fixing current user marker");
-                
-                // Get current position
-                const { latitude, longitude } = markerManager.currentUserMarker;
-                
-                // Remove and recreate marker
-                markerManager.removeMarker(userId);
-                
-                // Create a new marker with a slight offset to force redraw
-                const newMarker = markerManager.addMarker(
-                    userId, 
-                    latitude + 0.00001, 
-                    longitude + 0.00001, 
-                    username, 
-                    true
-                );
-                
-                // Force display by zooming in and opening popup
-                map.setView([latitude, longitude], 15);
-                if (newMarker && newMarker.marker) {
-                    newMarker.marker.openPopup();
-                }
-                
-                alert('Marker has been refreshed. You should now see it on the map.');
-            } else {
-                // No marker exists, try to create one with current location
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        
-                        // Remove any existing marker just in case
-                        markerManager.removeMarker(userId);
-                        
-                        // Create new marker
-                        const newMarker = markerManager.addMarker(userId, latitude, longitude, username, true);
-                        
-                        // Center and show popup
-                        map.setView([latitude, longitude], 15);
-                        if (newMarker && newMarker.marker) {
-                            newMarker.marker.openPopup();
-                        }
-                        
-                        alert('A new marker has been created at your current location.');
-                    },
-                    (error) => {
-                        alert('Could not get your location. Please make sure location services are enabled.');
-                        console.error('Debug geolocation error:', error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
-                );
             }
         });
         

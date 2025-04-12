@@ -7,26 +7,20 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
-        // Use the marker1 PNG icon
-        console.log("Creating CustomMarker with marker1.png");
+        // Use the original octopus SVG icon
         const customIcon = L.icon({
-            iconUrl: '/images/markers/marker1.png',
-            iconSize: [42, 42],
-            iconAnchor: [21, 42],
-            popupAnchor: [0, -38],
-            className: 'custom-marker-class animal-marker'
+            iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -35],
+            className: 'custom-marker-class'
         });
 
         // Create marker
         this.marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
-        console.log(`CustomMarker created at ${latitude}, ${longitude}`);
         
         // Add popup with username
         this.marker.bindPopup(`<b>${this.username}</b>`);
-        
-        // Force marker to be visible initially
-        this.marker.openPopup();
-        setTimeout(() => this.marker.closePopup(), 100);
     }
 
     // Update marker location
@@ -287,31 +281,28 @@ class MarkerManager {
     // Create icon for a marker
     createMarkerIcon(isCurrentUser) {
         if (isCurrentUser) {
-            // Use the marker1 file for the current user
-            console.log("Creating current user marker icon");
+            // Use the octopus icon for the current user
             return L.icon({
-                iconUrl: '/images/markers/marker1.png',
-                iconSize: [42, 42],
-                iconAnchor: [21, 42],
-                popupAnchor: [0, -38],
-                className: 'current-user-marker animal-marker'
+                iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
+                iconSize: [38, 38],
+                iconAnchor: [19, 38],
+                popupAnchor: [0, -35],
+                className: 'current-user-marker'
             });
         } else {
-            // Use the dolphin icon for other users
+            // Use a different color octopus for other users
             return L.icon({
-                iconUrl: '/images/markers/other-marker.svg',
-                iconSize: [36, 36],
-                iconAnchor: [18, 36],
-                popupAnchor: [0, -35],
-                className: 'other-user-marker animal-marker'
+                iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32],
+                className: 'other-user-marker'
             });
         }
     }
 
     // Add a new marker
     addMarker(userId, latitude, longitude, username, isCurrentUser = false) {
-        console.log(`Adding marker for user ${username}, isCurrentUser: ${isCurrentUser}`);
-        
         // Remove existing marker for this user if it exists
         this.removeMarker(userId);
         
@@ -320,7 +311,6 @@ class MarkerManager {
         
         // Create marker with the icon
         const marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
-        console.log(`Marker created at ${latitude}, ${longitude}`);
         
         // Add popup with username
         marker.bindPopup(`<b>${username}</b>`);
@@ -366,13 +356,7 @@ class MarkerManager {
         
         // If this is the current user, store a reference and start tracking
         if (isCurrentUser) {
-            console.log("Setting current user marker");
             this.currentUserMarker = customMarker;
-            
-            // Force marker to be visible by opening and closing popup
-            marker.openPopup();
-            setTimeout(() => marker.closePopup(), 100);
-            
             trackUserLocation(customMarker);
         }
         
