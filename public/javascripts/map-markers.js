@@ -7,14 +7,14 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
-        // Define a location pin icon as a data URL to ensure it always loads
-        const markerDataUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMDA3YmZmIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsLTExMi44NS02Mi43NCw3My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMjFDMTY3LDUwNi4xNzUsMTc3LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
-
+        // Use a local marker icon instead of data URL
         const customIcon = L.icon({
-            iconUrl: markerDataUrl,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
+            iconUrl: '/images/markers/marker-blue.png',
+            shadowUrl: '/images/markers/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
             className: 'custom-marker-class'
         });
 
@@ -278,20 +278,18 @@ class MarkerManager {
         this.map = map;
         this.markers = new Map(); // userId -> marker
         this.currentUserMarker = null;
-        
-        // Define user marker pin colors
-        this.currentUserPinUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMDA3YmZmIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsMTEyLjg1LTYyLjc0LDE1My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMDFDMTY3LDUwNi40MSwxNjcuNTM2LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
-        this.otherUserPinUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMzQ0MGMwIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsMTEyLjg1LTYyLjc0LDE1My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMDFDMTY3LDUwNi40MSwxNjcuNTM2LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
     }
 
     // Create icon for a marker
     createMarkerIcon(isCurrentUser) {
-        const iconUrl = isCurrentUser ? this.currentUserPinUrl : this.otherUserPinUrl;
+        // Use local marker icons with proper sizes and anchors
         return L.icon({
-            iconUrl: iconUrl,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
+            iconUrl: isCurrentUser ? '/images/markers/marker-red.png' : '/images/markers/marker-blue.png',
+            shadowUrl: '/images/markers/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
             className: isCurrentUser ? 'current-user-marker' : 'other-user-marker'
         });
     }

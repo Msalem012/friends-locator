@@ -98,19 +98,28 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
         .custom-marker-class {
-            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
         }
         .current-user-marker {
-            filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8));
-            animation: pulse-marker 2s infinite;
+            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));
+            z-index: 1000 !important;
         }
         .other-user-marker {
-            filter: drop-shadow(0 0 3px rgba(52, 64, 192, 0.5));
+            z-index: 900 !important;
         }
+        /* Override leaflet default marker z-index to ensure our markers stay on top */
+        .leaflet-marker-icon {
+            z-index: 800 !important;
+        }
+        /* Enable marker animations */
         @keyframes pulse-marker {
-            0% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8)); }
-            50% { transform: scale(1.05); filter: drop-shadow(0 0 5px rgba(0, 123, 255, 1)); }
-            100% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8)); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        /* Apply animation only to current user marker */
+        .current-user-marker {
+            animation: pulse-marker 2s infinite;
         }
         .online-users {
             position: absolute;
