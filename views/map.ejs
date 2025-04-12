@@ -139,6 +139,36 @@
             font-size: 0.9rem;
             color: #495057;
         }
+        .user-list li.has-location {
+            cursor: pointer;
+            padding: 8px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .user-list li.has-location:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            transform: translateY(-1px);
+        }
+        .user-list li.has-location.active {
+            background-color: rgba(13, 110, 253, 0.15);
+            border-left: 3px solid #0d6efd;
+            padding-left: 8px;
+        }
+        .user-list li .location-hint {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+            color: #6c757d;
+            opacity: 0.7;
+            font-style: italic;
+        }
+        .user-list li:hover .location-hint {
+            opacity: 1;
+            color: #0d6efd;
+        }
         .user-list li:last-child {
             border-bottom: none;
         }
@@ -172,6 +202,12 @@
             background-color: rgba(220, 53, 69, 0.2);
             color: #dc3545;
             animation: none;
+        }
+        .user-hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+            font-style: italic;
         }
         
         /* Mobile optimizations */
@@ -214,9 +250,22 @@
                 padding-bottom: 6px;
                 margin-bottom: 6px;
             }
+            .user-hint {
+                font-size: 0.7rem;
+                margin-bottom: 6px;
+            }
             .user-list li {
                 font-size: 0.8rem;
                 padding: 4px 0;
+            }
+            .user-list li.has-location {
+                padding: 6px 4px;
+            }
+            .user-list li .location-hint {
+                display: none; /* Hide the location hint on mobile to save space */
+            }
+            .user-list li.has-location.active {
+                padding-left: 6px;
             }
         }
     </style>
@@ -247,6 +296,7 @@
     
     <div class="online-users">
         <h3>Online Users <span id="trackingStatus" class="tracking-badge">Tracking Active</span></h3>
+        <div class="user-hint">Click on a user to locate them on the map</div>
         <ul id="userList" class="user-list">
             <li>Loading users...</li>
         </ul>
@@ -430,7 +480,10 @@
         document.getElementById('centerButton').addEventListener('click', () => {
             if (markerManager.currentUserMarker) {
                 const { latitude, longitude } = markerManager.currentUserMarker;
-                map.setView([latitude, longitude], 13);
+                map.flyTo([latitude, longitude], 15, {
+                    duration: 1.5,
+                    easeLinearity: 0.25
+                });
             } else {
                 alert('Your location is not available');
             }
@@ -462,16 +515,45 @@
             
             let html = '';
             users.forEach(user => {
+                const hasLocation = user.location && user.location.latitude && user.location.longitude;
+                const locationClass = hasLocation ? 'has-location' : 'no-location';
+                
                 html += `
-                    <li data-id="${user.userId}">
+                    <li data-id="${user.userId}" class="user-entry ${locationClass}" ${hasLocation ? `data-lat="${user.location.latitude}" data-lng="${user.location.longitude}"` : ''}>
                         <span class="status-dot"></span>
                         <strong>${user.username || 'Anonymous'}</strong>
                         ${user.userId === userId ? ' (You)' : ''}
+                        ${hasLocation ? '<span class="location-hint">Click to locate</span>' : ''}
                     </li>
                 `;
             });
             
             userList.innerHTML = html;
+            
+            // Add click handlers to user entries
+            document.querySelectorAll('.user-entry.has-location').forEach(entry => {
+                entry.addEventListener('click', function() {
+                    const userId = this.dataset.id;
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    
+                    // Center the map on this user with smooth animation
+                    map.flyTo([lat, lng], 15, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Find and open the marker popup
+                    const marker = markerManager.markers.get(userId);
+                    if (marker && marker.marker) {
+                        marker.marker.openPopup();
+                    }
+                    
+                    // Apply a highlight effect to the clicked user
+                    document.querySelectorAll('.user-entry').forEach(el => el.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
         }
 
         // Update tracking status when socket connection changes
