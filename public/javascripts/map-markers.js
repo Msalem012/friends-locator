@@ -7,8 +7,11 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
+        // Define a location pin icon as a data URL to ensure it always loads
+        const markerDataUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMDA3YmZmIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsLTExMi44NS02Mi43NCw3My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMjFDMTY3LDUwNi4xNzUsMTc3LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
+
         const customIcon = L.icon({
-            iconUrl: 'https://www.svgrepo.com/show/484570/octopus.svg',
+            iconUrl: markerDataUrl,
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32],
@@ -275,6 +278,22 @@ class MarkerManager {
         this.map = map;
         this.markers = new Map(); // userId -> marker
         this.currentUserMarker = null;
+        
+        // Define user marker pin colors
+        this.currentUserPinUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMDA3YmZmIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsMTEyLjg1LTYyLjc0LDE1My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMDFDMTY3LDUwNi40MSwxNjcuNTM2LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
+        this.otherUserPinUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjMzQ0MGMwIiBkPSJNMTcyLjI2OCw1MDEuNjdjLTcuNjQyLTcuNjYtMTUuODk4LTE3LjI3LTI0LjM2LTI4LjM5Yy0zMC45MzgtNDAuNTktNjIuNzQtOTYuMTktNjIuNzQtMTUzLjQ0YzAtODguNDQsNzEuNTYtMTYwLDE2MC0xNjBzMTYwLDcxLjU2LDE2MCwxNjBjMCw1Ny4yNS0zMS44MDIsMTEyLjg1LTYyLjc0LDE1My40NGMtOC40NjIsMTEuMTItMTYuNzE4LDIwLjczLTI0LjM2LDI4LjM5Yy00LjczMiw0Ljc0LTEyLjIwNCw0Ljc0LTE2LjkzNiwwbC0xMjguODY0LTAuMDFDMTY3LDUwNi40MSwxNjcuNTM2LDUwNi40MSwxNzIuMjY4LDUwMS42N3ogTTE5MiwyNTZjMzUuMzQ2LDAsNjQtMjguNjU0LDY0LTY0cy0yOC42NTQtNjQtNjQtNjRzLTY0LDI4LjY1NC02NCw2NFMxNTYuNjU0LDI1NiwxOTIsMjU2eiIvPjwvc3ZnPg==';
+    }
+
+    // Create icon for a marker
+    createMarkerIcon(isCurrentUser) {
+        const iconUrl = isCurrentUser ? this.currentUserPinUrl : this.otherUserPinUrl;
+        return L.icon({
+            iconUrl: iconUrl,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
+            className: isCurrentUser ? 'current-user-marker' : 'other-user-marker'
+        });
     }
 
     // Add a new marker
@@ -282,25 +301,61 @@ class MarkerManager {
         // Remove existing marker for this user if it exists
         this.removeMarker(userId);
         
-        // Create new marker
-        const marker = new CustomMarker(this.map, latitude, longitude, username);
+        // Get the right marker icon
+        const customIcon = this.createMarkerIcon(isCurrentUser);
         
-        // Store if this is the current user
-        marker.isCurrentUser = isCurrentUser;
+        // Create marker with the icon
+        const marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
+        
+        // Add popup with username
+        marker.bindPopup(`<b>${username}</b>`);
+        
+        // Create our marker object
+        const customMarker = new Object();
+        customMarker.map = this.map;
+        customMarker.marker = marker;
+        customMarker.latitude = latitude;
+        customMarker.longitude = longitude;
+        customMarker.username = username;
+        customMarker.isCurrentUser = isCurrentUser;
+        customMarker.trailVisible = false;
+        
+        // Add methods to the marker object
+        customMarker.updateLocation = function(lat, lng) {
+            this.latitude = lat;
+            this.longitude = lng;
+            this.marker.setLatLng([lat, lng]);
+            this.marker.setPopupContent(`<b>${this.username}</b>`);
+        };
+        
+        customMarker.updateUsername = function(newUsername) {
+            this.username = newUsername;
+            this.marker.setPopupContent(`<b>${this.username}</b>`);
+        };
+        
+        customMarker.remove = function() {
+            if (this.marker && this.map) {
+                this.map.removeLayer(this.marker);
+            }
+            
+            if (this.trailLine && this.map) {
+                this.map.removeLayer(this.trailLine);
+            }
+        };
         
         // Enable trail for current user only
-        marker.shouldShowTrail = isCurrentUser;
+        customMarker.shouldShowTrail = isCurrentUser;
         
         // Store in our collection
-        this.markers.set(userId, marker);
+        this.markers.set(userId, customMarker);
         
         // If this is the current user, store a reference and start tracking
         if (isCurrentUser) {
-            this.currentUserMarker = marker;
-            trackUserLocation(marker);
+            this.currentUserMarker = customMarker;
+            trackUserLocation(customMarker);
         }
         
-        return marker;
+        return customMarker;
     }
 
     // Update an existing marker

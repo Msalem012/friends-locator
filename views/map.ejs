@@ -100,6 +100,18 @@
         .custom-marker-class {
             filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
         }
+        .current-user-marker {
+            filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8));
+            animation: pulse-marker 2s infinite;
+        }
+        .other-user-marker {
+            filter: drop-shadow(0 0 3px rgba(52, 64, 192, 0.5));
+        }
+        @keyframes pulse-marker {
+            0% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 5px rgba(0, 123, 255, 1)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(0, 123, 255, 0.8)); }
+        }
         .online-users {
             position: absolute;
             bottom: 20px;
@@ -139,6 +151,20 @@
             font-size: 0.9rem;
             color: #495057;
         }
+        .user-list li.user-item-clickable {
+            cursor: pointer;
+            padding: 8px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .user-list li.user-item-clickable:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            transform: translateX(2px);
+        }
+        .user-list li.user-item-clickable:active {
+            background-color: rgba(13, 110, 253, 0.2);
+            transform: translateX(0);
+        }
         .user-list li:last-child {
             border-bottom: none;
         }
@@ -172,6 +198,21 @@
             background-color: rgba(220, 53, 69, 0.2);
             color: #dc3545;
             animation: none;
+        }
+        .location-indicator {
+            float: right;
+            color: #0d6efd;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        .map-icon {
+            font-style: normal;
+            font-size: 0.9rem;
+        }
+        .user-item-clickable:hover .location-indicator {
+            opacity: 1;
+            transform: scale(1.1);
         }
         
         /* Mobile optimizations */
@@ -347,6 +388,47 @@
                     const isCurrentUser = userId === window.userId;
                     markerManager.addMarker(userId, latitude, longitude, username, isCurrentUser);
                 }
+                
+                // Update user list item with new location data
+                const userItem = document.querySelector(`#userList li[data-id="${userId}"]`);
+                if (userItem) {
+                    // Update data attributes
+                    userItem.setAttribute('data-lat', latitude);
+                    userItem.setAttribute('data-lng', longitude);
+                    
+                    // Add clickable class and location indicator if not already there
+                    if (!userItem.classList.contains('user-item-clickable')) {
+                        userItem.classList.add('user-item-clickable');
+                        
+                        // Add location indicator if not present
+                        if (!userItem.querySelector('.location-indicator')) {
+                            const nameElement = userItem.querySelector('strong');
+                            const indicator = document.createElement('span');
+                            indicator.className = 'location-indicator';
+                            indicator.title = 'Click to center on this user';
+                            indicator.innerHTML = '<i class="map-icon">📍</i>';
+                            userItem.appendChild(indicator);
+                        }
+                        
+                        // Add click event listener
+                        userItem.addEventListener('click', function() {
+                            const lat = parseFloat(this.getAttribute('data-lat'));
+                            const lng = parseFloat(this.getAttribute('data-lng'));
+                            const targetUserId = this.getAttribute('data-id');
+                            
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                // Center map on user
+                                map.setView([lat, lng], 15);
+                                
+                                // Open the popup for this user's marker
+                                const marker = markerManager.markers.get(targetUserId);
+                                if (marker && marker.marker) {
+                                    marker.marker.openPopup();
+                                }
+                            }
+                        });
+                    }
+                }
             });
             
             // Handle user disconnection
@@ -462,16 +544,43 @@
             
             let html = '';
             users.forEach(user => {
+                const hasLocation = user.location && user.location.latitude && user.location.longitude;
+                const clickableClass = hasLocation ? 'user-item-clickable' : '';
+                
                 html += `
-                    <li data-id="${user.userId}">
+                    <li data-id="${user.userId}" class="${clickableClass}" ${hasLocation ? `data-lat="${user.location.latitude}" data-lng="${user.location.longitude}"` : ''}>
                         <span class="status-dot"></span>
                         <strong>${user.username || 'Anonymous'}</strong>
                         ${user.userId === userId ? ' (You)' : ''}
+                        ${hasLocation ? '<span class="location-indicator" title="Click to center on this user"><i class="map-icon">📍</i></span>' : ''}
                     </li>
                 `;
             });
             
             userList.innerHTML = html;
+            
+            // Add click handlers to user items
+            document.querySelectorAll('.user-item-clickable').forEach(item => {
+                item.addEventListener('click', function() {
+                    const lat = parseFloat(this.getAttribute('data-lat'));
+                    const lng = parseFloat(this.getAttribute('data-lng'));
+                    const targetUserId = this.getAttribute('data-id');
+                    const username = this.querySelector('strong').textContent;
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        // Center map on user
+                        map.setView([lat, lng], 15);
+                        
+                        // Open the popup for this user's marker
+                        const marker = markerManager.markers.get(targetUserId);
+                        if (marker && marker.marker) {
+                            marker.marker.openPopup();
+                        }
+                        
+                        console.log(`Centered on user: ${username}`);
+                    }
+                });
+            });
         }
 
         // Update tracking status when socket connection changes
