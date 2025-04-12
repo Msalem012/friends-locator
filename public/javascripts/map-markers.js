@@ -7,15 +7,13 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
-        // Use a local marker icon instead of data URL
+        // Use the animal SVG icon
         const customIcon = L.icon({
-            iconUrl: '/images/markers/marker-blue.png',
-            shadowUrl: '/images/markers/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41],
-            className: 'custom-marker-class'
+            iconUrl: '/images/markers/user-marker.svg',
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -35],
+            className: 'custom-marker-class animal-marker'
         });
 
         // Create marker
@@ -282,16 +280,25 @@ class MarkerManager {
 
     // Create icon for a marker
     createMarkerIcon(isCurrentUser) {
-        // Use local marker icons with proper sizes and anchors
-        return L.icon({
-            iconUrl: isCurrentUser ? '/images/markers/marker-red.png' : '/images/markers/marker-blue.png',
-            shadowUrl: '/images/markers/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41],
-            className: isCurrentUser ? 'current-user-marker' : 'other-user-marker'
-        });
+        if (isCurrentUser) {
+            // Use the octopus icon for the current user
+            return L.icon({
+                iconUrl: '/images/markers/user-marker.svg',
+                iconSize: [38, 38],
+                iconAnchor: [19, 38],
+                popupAnchor: [0, -35],
+                className: 'current-user-marker animal-marker'
+            });
+        } else {
+            // Use the dolphin icon for other users
+            return L.icon({
+                iconUrl: '/images/markers/other-marker.svg',
+                iconSize: [36, 36],
+                iconAnchor: [18, 36],
+                popupAnchor: [0, -35],
+                className: 'other-user-marker animal-marker'
+            });
+        }
     }
 
     // Add a new marker
