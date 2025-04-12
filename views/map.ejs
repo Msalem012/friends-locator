@@ -112,12 +112,20 @@
         }
         /* Ensure animal markers display properly */
         .animal-marker img {
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
-        /* Override leaflet default marker z-index to ensure our markers stay on top */
+        /* Fix for marker image invisibility */
         .leaflet-marker-icon {
-            z-index: 800 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 900 !important;
+        }
+        /* Make current user marker appear on top */
+        .current-user-marker {
+            z-index: 1000 !important; 
         }
         /* Enable marker animations */
         @keyframes pulse-marker {
@@ -301,6 +309,7 @@
     <div class="map-controls">
         <button id="centerButton" class="btn btn-sm">Center on Me</button>
         <button id="toggleTrailButton" class="btn btn-sm">Toggle Trail</button>
+        <button id="debugMarkerButton" class="btn btn-sm" style="background: rgba(220, 53, 69, 0.85);">Fix My Marker</button>
     </div>
     
     <div class="online-users">
@@ -491,7 +500,17 @@
                     
                     // Add marker for current user
                     if (userId && username) {
-                        markerManager.addMarker(userId, latitude, longitude, username, true);
+                        console.log("Creating initial marker for current user:", username);
+                        const currentUserMarker = markerManager.addMarker(userId, latitude, longitude, username, true);
+                        
+                        // Make sure the marker is displayed
+                        setTimeout(() => {
+                            if (currentUserMarker && currentUserMarker.marker) {
+                                console.log("Forcing marker visibility");
+                                currentUserMarker.marker.openPopup();
+                                setTimeout(() => currentUserMarker.marker.closePopup(), 500);
+                            }
+                        }, 1000);
                         
                         // Send initial location to server
                         if (socket) {
@@ -514,6 +533,11 @@
                         trackingStatus.textContent = 'Tracking Inactive';
                         trackingStatus.classList.add('inactive');
                     }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 }
             );
         } else {
@@ -547,6 +571,66 @@
                 }
             } else {
                 alert('Your location is not available');
+            }
+        });
+        
+        // Add debug button functionality 
+        document.getElementById('debugMarkerButton').addEventListener('click', () => {
+            if (markerManager.currentUserMarker) {
+                console.log("Debug: Fixing current user marker");
+                
+                // Get current position
+                const { latitude, longitude } = markerManager.currentUserMarker;
+                
+                // Remove and recreate marker
+                markerManager.removeMarker(userId);
+                
+                // Create a new marker with a slight offset to force redraw
+                const newMarker = markerManager.addMarker(
+                    userId, 
+                    latitude + 0.00001, 
+                    longitude + 0.00001, 
+                    username, 
+                    true
+                );
+                
+                // Force display by zooming in and opening popup
+                map.setView([latitude, longitude], 15);
+                if (newMarker && newMarker.marker) {
+                    newMarker.marker.openPopup();
+                }
+                
+                alert('Marker has been refreshed. You should now see it on the map.');
+            } else {
+                // No marker exists, try to create one with current location
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        
+                        // Remove any existing marker just in case
+                        markerManager.removeMarker(userId);
+                        
+                        // Create new marker
+                        const newMarker = markerManager.addMarker(userId, latitude, longitude, username, true);
+                        
+                        // Center and show popup
+                        map.setView([latitude, longitude], 15);
+                        if (newMarker && newMarker.marker) {
+                            newMarker.marker.openPopup();
+                        }
+                        
+                        alert('A new marker has been created at your current location.');
+                    },
+                    (error) => {
+                        alert('Could not get your location. Please make sure location services are enabled.');
+                        console.error('Debug geolocation error:', error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
             }
         });
         

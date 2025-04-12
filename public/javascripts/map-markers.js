@@ -7,20 +7,26 @@ class CustomMarker {
         this.username = username;
         this.trailVisible = false;
 
-        // Use the animal SVG icon
+        // Use the marker1 PNG icon
+        console.log("Creating CustomMarker with marker1.png");
         const customIcon = L.icon({
-            iconUrl: '/images/markers/user-marker.svg',
-            iconSize: [38, 38],
-            iconAnchor: [19, 38],
-            popupAnchor: [0, -35],
+            iconUrl: '/images/markers/marker1.png',
+            iconSize: [42, 42],
+            iconAnchor: [21, 42],
+            popupAnchor: [0, -38],
             className: 'custom-marker-class animal-marker'
         });
 
         // Create marker
         this.marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
+        console.log(`CustomMarker created at ${latitude}, ${longitude}`);
         
         // Add popup with username
         this.marker.bindPopup(`<b>${this.username}</b>`);
+        
+        // Force marker to be visible initially
+        this.marker.openPopup();
+        setTimeout(() => this.marker.closePopup(), 100);
     }
 
     // Update marker location
@@ -281,12 +287,13 @@ class MarkerManager {
     // Create icon for a marker
     createMarkerIcon(isCurrentUser) {
         if (isCurrentUser) {
-            // Use the octopus icon for the current user
+            // Use the marker1 file for the current user
+            console.log("Creating current user marker icon");
             return L.icon({
-                iconUrl: '/images/markers/user-marker.svg',
-                iconSize: [38, 38],
-                iconAnchor: [19, 38],
-                popupAnchor: [0, -35],
+                iconUrl: '/images/markers/marker1.png',
+                iconSize: [42, 42],
+                iconAnchor: [21, 42],
+                popupAnchor: [0, -38],
                 className: 'current-user-marker animal-marker'
             });
         } else {
@@ -303,6 +310,8 @@ class MarkerManager {
 
     // Add a new marker
     addMarker(userId, latitude, longitude, username, isCurrentUser = false) {
+        console.log(`Adding marker for user ${username}, isCurrentUser: ${isCurrentUser}`);
+        
         // Remove existing marker for this user if it exists
         this.removeMarker(userId);
         
@@ -311,6 +320,7 @@ class MarkerManager {
         
         // Create marker with the icon
         const marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
+        console.log(`Marker created at ${latitude}, ${longitude}`);
         
         // Add popup with username
         marker.bindPopup(`<b>${username}</b>`);
@@ -356,7 +366,13 @@ class MarkerManager {
         
         // If this is the current user, store a reference and start tracking
         if (isCurrentUser) {
+            console.log("Setting current user marker");
             this.currentUserMarker = customMarker;
+            
+            // Force marker to be visible by opening and closing popup
+            marker.openPopup();
+            setTimeout(() => marker.closePopup(), 100);
+            
             trackUserLocation(customMarker);
         }
         
