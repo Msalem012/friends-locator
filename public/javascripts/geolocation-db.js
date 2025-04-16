@@ -30,7 +30,7 @@ class GeolocationDatabase {
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
         
-        // Create object store for location history
+        // Create object store for location history  ---- 
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const objectStore = db.createObjectStore(STORE_NAME, { 
             keyPath: 'timestamp' 
