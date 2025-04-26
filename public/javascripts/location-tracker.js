@@ -7,7 +7,7 @@ export class LocationTracker {
         this.lastPosition = null;
         this.lastUpdateTime = 0;
         this.updateInterval = 3000;
-        this.minAccuracy = 30;
+        this.minAccuracy = 50;
         this.positionThreshold = 0.000005;
         this.positionHistory = [];
         this.historySize = 5;
