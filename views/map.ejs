@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Geoloc - Map Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel='stylesheet' href='/stylesheets/theme.css' />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { 
+            width: 100%;
+            height: calc(100vh - 60px); /* Full height minus navbar */
+        }
+        .navbar {
+            background-color: #343a40;
+            padding: 0.5rem 1rem;
+            color: white;
+            height: 60px;
+            box-sizing: border-box;
+        }
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
+        .navbar a:hover {
+            color: #ccc;
+        }
+        .user-controls {
+            display: flex;
+            align-items: center;
+        }
+        .user-controls form {
+            margin-left: 0.5rem;
+        }
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-logout:hover {
+            background-color: #c82333;
+        }
+        .map-controls {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            z-index: 1000;
+            background: transparent;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .map-controls button {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+        .map-controls button#centerButton {
+            background: rgba(13, 110, 253, 0.85);
+        }
+        .map-controls button#toggleTrailButton {
+            background: rgba(33, 37, 41, 0.8);
+        }
+        .map-controls button#toggleTrailButton.active {
+            background: rgba(40, 167, 69, 0.85);
+        }
+        .map-controls button#toggleTrailButton:not(.active) {
+            background: rgba(108, 117, 125, 0.85);
+        }
+        .map-controls button:last-child {
+            margin-bottom: 0;
+        }
+        .map-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .map-controls button#centerButton:hover {
+            background: rgba(13, 110, 253, 0.95);
+        }
+        .map-controls button#toggleTrailButton:hover {
+            background: rgba(33, 37, 41, 0.9);
+        }
+        .map-controls button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .custom-marker-class {
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
+        }
+        .online-users {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            max-width: 250px;
+            max-height: 200px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .online-users:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+        .online-users h3 {
+            margin-top: 0;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            color: #343a40;
+            font-weight: 600;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .user-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        .user-list li.has-location {
+            cursor: pointer;
+            padding: 8px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .user-entry-content {
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 100%;
+        }
+        .user-info {
+            flex-grow: 1;
+            margin-right: 80px; /* Make space for the location hint */
+        }
+        .user-list li.has-location:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            transform: translateY(-1px);
+        }
+        .user-list li.has-location.active {
+            background-color: rgba(13, 110, 253, 0.15);
+            border-left: 3px solid #0d6efd;
+            padding-left: 8px;
+        }
+        .user-list li .location-hint {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+            color: #6c757d;
+            opacity: 0.7;
+            font-style: italic;
+            display: inline-block;
+            white-space: nowrap;
+            z-index: 1;
+        }
+        .user-list li:hover .location-hint {
+            opacity: 1;
+            color: #0d6efd;
+        }
+        .user-list li:last-child {
+            border-bottom: none;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #28a745;
+            margin-right: 5px;
+            box-shadow: 0 0 4px rgba(40, 167, 69, 0.5);
+        }
+        .status-dot.status-active {
+            background-color: #28a745; /* Green */
+            animation: pulse 2s infinite;
+        }
+        .status-dot.status-no-location {
+            background-color: #ffc107; /* Yellow */
+            animation: none;
+        }
+        .location-hint-inactive {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+            color: #dc3545; /* Red */
+            opacity: 0.7;
+            font-style: italic;
+            display: inline-block;
+            white-space: nowrap;
+            z-index: 1;
+        }
+        .activity-time {
+            font-size: 0.7rem;
+            color: #6c757d;
+            display: block;
+            margin-top: 2px;
+            font-style: italic;
+        }
+        .distance-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
+            padding: 1px 5px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 500;
+        }
+        .tracking-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #198754;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+            vertical-align: middle;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        .tracking-badge.inactive {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            animation: none;
+        }
+        .user-hint {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 576px) {
+            .navbar {
+                padding: 0.5rem;
+            }
+            .navbar-content {
+                flex-wrap: nowrap;
+            }
+            .user-controls span {
+                display: none; /* Hide "Welcome, username" on very small screens */
+            }
+            .user-controls form {
+                margin-left: 0.25rem;
+            }
+            .btn-logout {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            .map-controls {
+                top: unset;
+                bottom: 20px;
+                right: 10px;
+                max-width: 130px;
+            }
+            .map-controls button {
+                padding: 7px 10px;
+                font-size: 0.85rem;
+            }
+            .online-users {
+                bottom: 20px;
+                left: 10px;
+                max-width: 150px;
+                max-height: 150px;
+                padding: 10px;
+            }
+            .online-users h3 {
+                font-size: 14px;
+                padding-bottom: 6px;
+                margin-bottom: 6px;
+            }
+            .user-hint {
+                font-size: 0.7rem;
+                margin-bottom: 6px;
+            }
+            .user-list li {
+                font-size: 0.8rem;
+                padding: 4px 0;
+            }
+            .user-list li.has-location {
+                padding: 6px 4px;
+            }
+            .user-list li .location-hint {
+                display: none; /* Hide the location hint on mobile to save space */
+            }
+            .user-list li.has-location.active {
+                padding-left: 6px;
+            }
+        }
+        
+        /* Add Friend button and modal styles */
+        #addFriendBtn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        #addFriendBtn:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+        .user-search-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        #searchResults {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        /* Filter buttons styles */
+        .filter-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .filter-buttons button {
+            flex: 1;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        
+        .filter-buttons button.active {
+            font-weight: bold;
+        }
+        
+        .filter-buttons button#showAllBtn.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .filter-buttons button#showFriendsBtn.active {
+            background-color: #198754;
+            color: white;
+            border-color: #198754;
+        }
+        
+        /* Mobile optimization for filter buttons */
+        @media (max-width: 576px) {
+            .filter-buttons button {
+                font-size: 0.7rem;
+                padding: 2px 5px;
+            }
+        }
+        
+        /* Friend management styles */
+        .friend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-right: 8px !important;
+        }
+        
+        .friend-name {
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        
+        .delete-friend {
+            color: #dc3545;
+            border: none;
+            background: none;
+            font-size: 0.8rem;
+            padding: 2px 4px;
+            opacity: 0.8;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .delete-friend:hover {
+            opacity: 1;
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        .delete-friend-icon {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Toast notification styles */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.9rem;
+            z-index: 10000;
+            max-width: 300px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .toast-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast-success {
+            background-color: #28a745;
+        }
+        
+        .toast-error {
+            background-color: #dc3545;
+        }
+        
+        .toast-info {
+            background-color: #17a2b8;
+        }
+        
+        .toast-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        /* Mobile optimization for toasts */
+        @media (max-width: 576px) {
+            .toast-notification {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 0.8rem;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div>
+                <a href="/" style="font-size: 1.25rem; font-weight: bold;">Geoloc</a>
+            </div>
+            <div class="user-controls">
+                <% if (user) { %>
+                    <span class="d-none d-sm-inline">Welcome, <%= user.username %></span>
+                    <button id="theme-toggle" class="me-3" title="Toggle dark/light mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="addFriendBtn" class="btn btn-sm btn-primary me-2">Add Friend</button>
+                    <form action="/auth/logout" method="POST" style="display: inline;">
+                        <button type="submit" class="btn-logout">Logout</button>
+                    </form>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Add Friend Modal -->
+    <div class="modal fade" id="addFriendModal" tabindex="-1" aria-labelledby="addFriendModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFriendModalLabel">Add Friend</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="friendUsername" class="form-label">Friend's Username</label>
+                        <input type="text" class="form-control" id="friendUsername" placeholder="Enter username">
+                        <div id="searchResults" class="mt-2"></div>
+                    </div>
+                    <div id="friendAddStatus"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="addFriendSubmit">Add Friend</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    
+    <div class="map-controls">
+        <button id="centerButton" class="btn btn-sm">Center on Me</button>
+        <button id="toggleTrailButton" class="btn btn-sm active">Hide Trail</button>
+    </div>
+    
+    <div class="online-users">
+        <h3>Online Users <span id="trackingStatus" class="tracking-badge">Tracking Active</span></h3>
+        <div class="user-hint">Click on a user to locate them on the map</div>
+        <div class="filter-buttons mb-2">
+            <button id="showAllBtn" class="btn btn-sm btn-outline-primary active">All Users</button>
+            <button id="showFriendsBtn" class="btn btn-sm btn-outline-success">Friends Only</button>
+        </div>
+        
+        <!-- All users list - visible by default -->
+        <ul id="allUsersList" class="user-list">
+            <li>Loading users...</li>
+        </ul>
+        
+        <!-- Friends-filtered list - hidden by default -->
+        <ul id="friendsFilteredList" class="user-list" style="display: none;">
+            <li>Loading friends...</li>
+        </ul>
+        
+        <h3 class="mt-3">Nearby Users</h3>
+        <div class="user-hint">Users sorted by distance from you</div>
+        <ul id="nearbyUsersList" class="user-list">
+            <li>Calculating distances...</li>
+        </ul>
+        
+        <h3 class="mt-3">My Friends</h3>
+        <div class="user-hint">Your added friends</div>
+        <ul id="friendsList" class="user-list">
+            <li>Loading friends...</li>
+        </ul>
+    </div>
+
+    <!-- Store user data for JavaScript -->
+    <% if (user) { %>
+        <div id="userData" data-user='<%= JSON.stringify(user) %>' style="display: none;"></div>
+    <% } %>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/javascripts/map-markers.js"></script>
+    <script src="/javascripts/theme-switcher.js"></script>
+    <script type="module">
+        import MarkerManager from '/javascripts/map-markers.js';
+        import { createCustomIcon } from '/javascripts/map-markers.js';
+        import { locationTracker, geoManager, initializeApp, trailVisible } from '/javascripts/geoloc-main.js';
+        
+        // Global variables for tracking state
+        window.allOnlineUsers = [];
+        window.myFriends = [];
+        window.currentDisplayMode = 'all'; // 'all' or 'friends'
+        window.friendsLoaded = false; // Track if friends have been loaded
+        
+        // User inactivity settings
+        const USER_INACTIVITY_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const CLEANUP_INTERVAL = 30 * 1000; // Check for inactive users every 30 seconds
+        
+        // Local trail visibility state
+        let localTrailVisible = true;
+        
+        // Initialize toggle button based on initial trail visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('toggleTrailButton');
+            if (toggleBtn) {
+                if (localTrailVisible) {
+                    toggleBtn.textContent = 'Hide Trail';
+                    toggleBtn.classList.add('active');
+                } else {
+                    toggleBtn.textContent = 'Show Trail';
+                    toggleBtn.classList.remove('active');
+                }
+            }
+            
+            // Start the user inactivity cleanup timer
+            startInactivityCleanup();
+        });
+        
+        // Debug function to log the state - made global
+        window.logState = function(label) {
+            console.log(`[${label}] Mode: ${window.currentDisplayMode}, All Users: ${window.allOnlineUsers.length}, Friends: ${window.myFriends.length}`);
+        };
+        
+        // Global function to load friends list
+        window.loadFriendsList = function() {
+            console.log('Loading friends from global function');
+            fetch('/users/friends')
+                .then(response => response.json())
+                .then(friends => {
+                    console.log('Loaded friends from API:', friends);
+                    
+                    // Store friends for filtering
+                    window.myFriends = friends || [];
+                    
+                    if (window.logState) {
+                        window.logState('Global loadFriendsList');
+                    }
+                    
+                    // If in friends-only mode, update the display
+                    if (window.currentDisplayMode === 'friends' && window.updateFriendsFilteredList) {
+                        window.updateFriendsFilteredList();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading friends:', error);
+                });
+        };
+        
+        // Get user data
+        const userDataElement = document.getElementById('userData');
+        let userId = null;
+        let username = null;
+        
+        if (userDataElement) {
+            try {
+                const userData = JSON.parse(userDataElement.dataset.user);
+                userId = userData.id;
+                username = userData.username;
+                locationTracker.setUserId(userId);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+            }
+        }
+
+        // Map initialization
+        const map = L.map('map').setView([51.505, -0.09], 13);
+        const markerManager = new MarkerManager(map, {
+            trailOptions: {
+                color: '#3498db',
+                weight: 4,
+                opacity: 0.7
+            }
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Custom marker icon
+        const userIcon = createCustomIcon({
+            imageUrl: '/images/fox-svgrepo-com.png',
+            size: [45, 45],
+            anchor: [16, 32]
+        });
+
+        if (userDataElement) {
+            try {
+                const userData = JSON.parse(userDataElement.dataset.user);
+                userId = userData.id;
+                username = userData.username;
+                initializeApp(userId, username);  
+        
+                locationTracker.setUserId(userId);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+            }
+        }
+
+        // Tracked user variables
+        let trackedUserId = null;
+        let socket = null;
+
+        // Initialize database
+        geoManager.initialize((error) => {
+            if (error) {
+                console.error('Database initialization failed:', error);
+                return;
+            }
+            console.log('Database initialized successfully');
+            
+            // Start tracking after DB is ready
+            initializeTracking();
+        });
+
+        function initializeTracking() {
+            // Start location tracking
+            locationTracker.startTracking()
+                .then(() => {
+                    console.log('Location tracking started');
+                    updateTrackingStatus(true);
+                    
+                    // Initialize Socket.IO
+                    initializeSocketIO();
+                })
+                .catch(error => {
+                    console.error('Failed to start tracking:', error);
+                    updateTrackingStatus(false);
+                    
+                    // Show a user-friendly error message
+                    if (error.code === 1) {
+                        // Permission denied error
+                        showToast('Location permission denied. Please enable location access in your browser settings to use this feature.', 'error');
+                    } else if (error.code === 2) {
+                        // Position unavailable error
+                        showToast('Unable to determine your location. Please check your device\'s location settings.', 'error');
+                    } else if (error.code === 3) {
+                        // Timeout error
+                        showToast('Location request timed out. Please try again.', 'error');
+                    } else {
+                        // Generic error
+                        showToast('Error accessing your location. Please make sure location services are enabled.', 'error');
+                    }
+                    
+                    // Continue with Socket.IO initialization to at least show other users
+                    initializeSocketIO();
+                });
+
+            // Handle position updates
+            window.addEventListener('positionUpdated', (event) => {
+                const { latitude, longitude, timestamp } = event.detail;
+                updateUserPosition(userId, latitude, longitude, timestamp);
+                
+                // Update nearby users list when our position changes
+                updateNearbyUsersList();
+            });
+
+            // Handle tracking errors
+            window.addEventListener('trackingError', (event) => {
+                console.error('Tracking error:', event.detail.error);
+                updateTrackingStatus(false);
+                
+                // Show a user-friendly error message based on the error code
+                const error = event.detail.error;
+                if (error.code === 1) {
+                    showToast('Location permission denied. Please enable location access in your browser settings.', 'error');
+                } else if (error.code === 2) {
+                    showToast('Unable to determine your location. Please check your device\'s location settings.', 'error');
+                } else if (error.code === 3) {
+                    showToast('Location request timed out. Please try again.', 'error');
+                } else {
+                    showToast('Error tracking your location. Please check your device settings.', 'error');
+                }
+            });
+        }
+
+        function initializeSocketIO() {
+            try {
+                // Add reconnection settings
+                socket = io({
+                    reconnection: true,
+                    reconnectionAttempts: Infinity,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    timeout: 20000
+                });
+                window.socket = socket;
+                
+                // Handle connection
+                socket.on('connect', () => {
+                    console.log('Connected to Socket.IO server');
+                    
+                    // Send user data on connection
+                    if (userId && username) {
+                        socket.emit('user_connected', {
+                            userId: userId,
+                            username: username
+                        });
+                    }
+                    
+                    // Request active users immediately after connecting
+                    socket.emit('request_active_users');
+                    
+                    // Update tracking status
+                    updateTrackingStatus(true);
+                });
+                
+                // Handle disconnection
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from Socket.IO server');
+                    updateTrackingStatus(false);
+                    // Don't clear markers on temporary disconnection
+                    // markerManager.clearOtherMarkers();
+                });
+                
+                // Handle reconnection
+                socket.on('reconnect', () => {
+                    console.log('Reconnected to Socket.IO server');
+                    // Re-send user data on reconnection
+                    if (userId && username) {
+                        socket.emit('user_connected', {
+                            userId: userId,
+                            username: username
+                        });
+                    }
+                    
+                    // Request active users after reconnecting
+                    socket.emit('request_active_users');
+                    
+                    // Reset last seen timestamps to avoid removing users too quickly
+                    if (window.userLastSeen) {
+                        const now = Date.now();
+                        window.userLastSeen.forEach((timestamp, id) => {
+                            window.userLastSeen.set(id, now);
+                        });
+                    }
+                });
+                
+                // Store original users list for filter functionality
+                const originalUpdateUsersList = updateUsersList;
+                
+                // Make it accessible globally
+                window.originalUpdateUsersList = originalUpdateUsersList;
+                
+                // Override updateUsersList to store all users
+                window.updateUsersList = function(users) {
+                    console.log('updateUsersList called with users:', users);
+                    
+                    // Store all online users for filtering
+                    window.allOnlineUsers = users || [];
+                    allOnlineUsers = users || [];
+                    
+                    if (window.logState) {
+                        window.logState('updateUsersList');
+                    }
+                    
+                    // Update the all users list
+                    updateUsersList(users);
+                    
+                    // Update nearby users list
+                    updateNearbyUsersList();
+                };
+                
+                // Set up socket event handlers
+                socket.on('active_users', (users) => {
+                    console.log('active_users event received with users:', users);
+                    
+                    // Initialize lastSeen for all users
+                    if (!window.userLastSeen) window.userLastSeen = new Map();
+                    
+                    if (users && users.length > 0) {
+                        const now = Date.now();
+                        users.forEach(user => {
+                            if (user.userId !== userId) {
+                                window.userLastSeen.set(user.userId, now);
+                            }
+                        });
+                    }
+                    
+                    // Update all online users
+                    window.allOnlineUsers = users || [];
+                    allOnlineUsers = users || [];
+                    
+                    if (window.logState) {
+                        window.logState('active_users event');
+                    }
+                    
+                    // Use the patched updateUsersList
+                    window.updateUsersList(users);
+                    
+                    // If this is the first load, also load friends
+                    if (!window.friendsLoaded) {
+                        try {
+                            if (typeof loadFriendsList === 'function') {
+                                loadFriendsList();
+                            } else {
+                                // Call the API directly if function not available
+                                fetch('/users/friends')
+                                    .then(response => response.json())
+                                    .then(friends => {
+                                        console.log('Loaded friends directly:', friends);
+                                        window.myFriends = friends || [];
+                                        if (window.currentDisplayMode === 'friends') {
+                                            window.updateFriendsFilteredList();
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error loading friends:', error);
+                                    });
+                            }
+                        } catch (error) {
+                            console.error('Error calling loadFriendsList:', error);
+                        }
+                        window.friendsLoaded = true;
+                    }
+                    
+                    // Initialize nearby users list
+                    updateNearbyUsersList();
+                });
+                
+                // Add support for refreshing user list
+                socket.on('request_active_users', () => {
+                    console.log('Requesting active users');
+                    socket.emit('request_active_users');
+                });
+                
+                socket.on('user_location_updated', handleUserLocationUpdate);
+                socket.on('user_disconnected', handleUserDisconnect);
+
+                socket.on('send_track', async (requesterId) => {
+                    console.log('Received request for location history');
+        
+                    try {
+                        if (!geoManager) {
+                            throw new Error('GeoManager not initialized');
+                        }
+            
+                        // Получаем историю из своей базы
+                        const locations = await new Promise((resolve, reject) => {
+                            geoManager.getAllGeolocations((error, locations) => {
+                                if (error) reject(error);
+                                else {
+                                    socket.emit('get_user_track', {
+                                        targetId: requesterId,
+                                        locationHistory: locations
+                                    });   
+                                }
+                            });
+                        });
+            
+                    } catch (error) {
+                        console.error('Failed to get locations:', error);
+                        socket.emit('track_error', {
+                            targetId: requesterId,
+                            message: error.message
+                        });
+                    }
+                });
+
+                // 3. Получение истории от другого пользователя
+                socket.on('get_track', (data) => {
+                    if (!data || !data.locationHistory) {
+                        console.warn('Received empty track data');
+                        return;
+                    }
+        
+                    const { locationHistory, targetId } = data;
+                    console.log(`Received track with ${locationHistory.length} points`);
+        
+                    // Фильтрация некорректных точек
+                    const validLocations = locationHistory.filter(loc => 
+                        loc.latitude && loc.longitude &&
+                        !isNaN(loc.latitude) && !isNaN(loc.longitude)
+                    );
+        
+                    if (validLocations.length === 0) {
+                        console.warn('No valid locations in track');
+                        return;
+                    }
+        
+                    // Отображаем трек
+                    markerManager.drawPathFromPoints(validLocations, {
+                        color: '#e74c3c',
+                        weight: 4,
+                        fitBounds: true
+                    });
+        
+                    // Добавляем маркер последней позиции
+                    const last = validLocations[validLocations.length - 1];
+                });
+            } catch (error) {
+                console.error('Error initializing Socket.IO:', error);
+            }
+        }
+
+        function updateUserPosition(userId, lat, lng, timestamp) {
+            // Update marker on map
+            markerManager.setMarker(userId, lat, lng, username, {
+                icon: userIcon,
+                isTrail: localTrailVisible
+            });
+
+            // Save to database
+            geoManager.saveCurrentGeolocation({
+                latitude: lat,
+                longitude: lng,
+                timestamp: timestamp || Date.now()
+            }, (error) => {
+                if (error) console.error('Error saving location:', error);
+            });
+
+            // Send to server
+            if (socket && socket.connected) {
+                socket.emit('location_update', {
+                    userId,
+                    latitude: lat,
+                    longitude: lng,
+                    timestamp: timestamp || Date.now()
+                });
+            }
+        }
+
+        // Helper function to format time since last activity
+        function formatTimeSince(timestamp) {
+            if (!timestamp) return '';
+            
+            const now = Date.now();
+            const seconds = Math.floor((now - timestamp) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+        
+        function updateUsersList(users) {
+            const allUsersList = document.getElementById('allUsersList');
+            
+            if (!users || users.length === 0) {
+                allUsersList.innerHTML = '<li>No users online</li>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                if (user.userId === userId) return;
+                
+                const hasLocation = user.location && user.location.latitude && user.location.longitude;
+                const locationClass = hasLocation ? 'has-location' : 'no-location';
+                const isTracked = user.userId === trackedUserId;
+                
+                // Get the last activity time
+                const lastSeen = window.userLastSeen ? window.userLastSeen.get(user.userId) : null;
+                const lastActivity = formatTimeSince(lastSeen);
+                const activityInfo = lastSeen && !hasLocation ? 
+                    `<span class="activity-time">Last active: ${lastActivity}</span>` : '';
+                
+                html += `
+                    <li data-id="${user.userId}" class="user-entry ${locationClass} ${isTracked ? 'active' : ''}" 
+                        ${hasLocation ? `data-lat="${user.location.latitude}" data-lng="${user.location.longitude}"` : ''}>
+                        <div class="user-entry-content">
+                            <span class="status-dot ${hasLocation ? 'status-active' : 'status-no-location'}"></span>
+                            <div class="user-info">
+                                <strong>${user.username || 'Anonymous'}</strong>
+                                ${activityInfo}
+                            </div>
+                            ${isTracked ? '<span class="tracking-badge">Tracking</span>' : ''}
+                            ${hasLocation ? 
+                                '<span class="location-hint">Click to locate</span>' : 
+                                '<span class="location-hint-inactive">No location data</span>'}
+                        </div>
+                    </li>
+                `;
+            });
+            
+            allUsersList.innerHTML = html || '<li>No other users online</li>';
+            
+            // Add click handlers
+            document.querySelectorAll('#allUsersList .user-entry.has-location').forEach(entry => {
+                entry.addEventListener('click', function() {
+                    const targetUserId = this.dataset.id;
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    const username = this.querySelector('.user-info strong').textContent;
+                    
+                    // Center map on user
+                    map.flyTo([lat, lng], 15, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Handle user tracking
+                    if (targetUserId !== userId) {
+                        if (trackedUserId === targetUserId) {
+                            markerManager.clearPath();
+                            trackedUserId = null;
+                        } else {
+                            // Start tracking new user
+                            if (trackedUserId) {
+                                markerManager.clearPath();
+                            }
+                            trackedUserId = targetUserId;
+                            
+                            // Request location history
+                            requestUserTrack(targetUserId);
+                        }
+                        
+                        // Update UI
+                        document.querySelectorAll('.user-entry').forEach(el => el.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
+            // Also update the friends-filtered list if we have friends data
+            updateFriendsFilteredList();
+        }
+        
+        // Function to update the friends-filtered list
+        function updateFriendsFilteredList() {
+            const friendsFilteredList = document.getElementById('friendsFilteredList');
+            
+            // If we don't have friends data yet
+            if (!window.myFriends || !window.allOnlineUsers) {
+                friendsFilteredList.innerHTML = '<li>Loading...</li>';
+                return;
+            }
+            
+            // Create a map of friend IDs for faster lookup
+            const friendIds = new Map();
+            window.myFriends.forEach(friend => {
+                friendIds.set(friend.id.toString(), friend);
+            });
+            
+            // Filter online users to show only friends
+            const onlineFriends = window.allOnlineUsers.filter(user => 
+                friendIds.has(user.userId?.toString())
+            );
+            
+            if (!onlineFriends || onlineFriends.length === 0) {
+                friendsFilteredList.innerHTML = '<li>No friends online</li>';
+                return;
+            }
+            
+            let html = '';
+            onlineFriends.forEach(user => {
+                if (user.userId === userId) return;
+                
+                const hasLocation = user.location && user.location.latitude && user.location.longitude;
+                const locationClass = hasLocation ? 'has-location' : 'no-location';
+                const isTracked = user.userId === trackedUserId;
+                
+                // Get the last activity time
+                const lastSeen = window.userLastSeen ? window.userLastSeen.get(user.userId) : null;
+                const lastActivity = formatTimeSince(lastSeen);
+                const activityInfo = lastSeen && !hasLocation ? 
+                    `<span class="activity-time">Last active: ${lastActivity}</span>` : '';
+                
+                html += `
+                    <li data-id="${user.userId}" class="user-entry ${locationClass} ${isTracked ? 'active' : ''}" 
+                        ${hasLocation ? `data-lat="${user.location.latitude}" data-lng="${user.location.longitude}"` : ''}>
+                        <div class="user-entry-content">
+                            <span class="status-dot ${hasLocation ? 'status-active' : 'status-no-location'}"></span>
+                            <div class="user-info">
+                                <strong>${user.username || 'Anonymous'}</strong>
+                                ${activityInfo}
+                            </div>
+                            ${isTracked ? '<span class="tracking-badge">Tracking</span>' : ''}
+                            ${hasLocation ? 
+                                '<span class="location-hint">Click to locate</span>' : 
+                                '<span class="location-hint-inactive">No location data</span>'}
+                        </div>
+                    </li>
+                `;
+            });
+            
+            friendsFilteredList.innerHTML = html;
+            
+            // Add click handlers
+            document.querySelectorAll('#friendsFilteredList .user-entry.has-location').forEach(entry => {
+                entry.addEventListener('click', function() {
+                    const targetUserId = this.dataset.id;
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    const username = this.querySelector('.user-info strong').textContent;
+                    
+                    // Center map on user
+                    map.flyTo([lat, lng], 15, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Handle user tracking
+                    if (targetUserId !== userId) {
+                        if (trackedUserId === targetUserId) {
+                            markerManager.clearPath();
+                            trackedUserId = null;
+                        } else {
+                            // Start tracking new user
+                            if (trackedUserId) {
+                                markerManager.clearPath();
+                            }
+                            trackedUserId = targetUserId;
+                            
+                            // Request location history
+                            requestUserTrack(targetUserId);
+                        }
+                        
+                        // Update UI
+                        document.querySelectorAll('.user-entry').forEach(el => el.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Make updateFriendsFilteredList available globally
+        window.updateFriendsFilteredList = updateFriendsFilteredList;
+
+        // Create a global function to store online users from socket events
+        window.storeOnlineUsers = function(users) {
+            window.allOnlineUsers = users || [];
+            allOnlineUsers = window.allOnlineUsers;
+            
+            if (window.logState) {
+                window.logState('storeOnlineUsers');
+            }
+            
+            // Re-apply filter if we're in friends-only mode
+            if (window.currentDisplayMode === 'friends') {
+                setTimeout(() => {
+                    updateFriendsFilteredList();
+                }, 50);
+            }
+        };
+        
+        // Function to extract user data from already rendered list
+        function extractCurrentUsers() {
+            const userEntries = document.querySelectorAll('#allUsersList .user-entry');
+            if (userEntries.length > 0) {
+                const users = [];
+                userEntries.forEach(entry => {
+                    const userId = entry.dataset.id;
+                    const username = entry.querySelector('.user-info strong').textContent;
+                    let location = null;
+                    
+                    if (entry.classList.contains('has-location')) {
+                        location = {
+                            latitude: parseFloat(entry.dataset.lat),
+                            longitude: parseFloat(entry.dataset.lng)
+                        };
+                    }
+                    
+                    users.push({
+                        userId,
+                        username,
+                        location
+                    });
+                });
+                
+                if (users.length > 0) {
+                    allOnlineUsers = users;
+                    window.allOnlineUsers = users;
+                }
+            }
+        }
+
+        function requestUserTrack(targetUserId) {
+            if (!socket || !socket.connected) {
+                console.error('Socket not connected');
+                return;
+            }
+    
+            console.log(`Requesting track from user: ${targetUserId}`);
+            socket.emit('send_user_track', {
+                targetId: targetUserId,
+                userId: userId
+            });
+        }
+
+
+        function handleUserLocationUpdate(data) {
+            if (data.targetId === userId) return;
+            
+            const { targetId, username, location } = data;
+            if (!location) return;
+            
+            // Make sure marker exists
+            let marker = markerManager.markers.get(targetId);
+            
+            // First refresh the marker in case it was previously marked as stale
+            if (marker) {
+                markerManager.refreshMarker(targetId);
+            }
+            
+            // Always update marker for all users
+            markerManager.setMarker(targetId, location.latitude, location.longitude, username, {
+                icon: userIcon,
+                isTrail: targetId === trackedUserId && localTrailVisible
+            });
+            
+            // Update lastSeen timestamp for this user (marker manager already does this, but we also want to track in case we don't have a marker yet)
+            if (!window.userLastSeen) window.userLastSeen = new Map();
+            window.userLastSeen.set(targetId, Date.now());
+            
+            // Update user in both lists
+            updateUserEntryWithLocation(targetId, location);
+            
+            // Update nearby users list when any user's location changes
+            updateNearbyUsersList();
+            
+            // Update friend in friends list if this user is a friend
+            const friendElement = document.querySelector(`#friendsList li[data-userId="${targetId}"]`);
+            if (friendElement) {
+                friendElement.classList.add('has-location');
+                friendElement.dataset.lat = location.latitude;
+                friendElement.dataset.lng = location.longitude;
+                
+                // Add location hint if not already present
+                const nameSpan = friendElement.querySelector('.friend-name');
+                if (nameSpan && !nameSpan.querySelector('.location-hint')) {
+                    const locationHint = document.createElement('span');
+                    locationHint.className = 'location-hint';
+                    locationHint.textContent = 'Click to locate';
+                    nameSpan.appendChild(locationHint);
+                    
+                    // Add click handler if not already present
+                    if (!nameSpan._hasClickHandler) {
+                        nameSpan.addEventListener('click', function() {
+                            const lat = parseFloat(friendElement.dataset.lat);
+                            const lng = parseFloat(friendElement.dataset.lng);
+                            
+                            // Center map on friend
+                            map.flyTo([lat, lng], 15, {
+                                duration: 1.5,
+                                easeLinearity: 0.25
+                            });
+                            
+                            // Get the user ID and check if markers exist
+                            const friendUserId = friendElement.dataset.userId;
+                            const marker = markerManager.markers.get(friendUserId);
+                            
+                            if (!marker && location) {
+                                markerManager.setMarker(
+                                    friendUserId, 
+                                    lat, 
+                                    lng, 
+                                    nameSpan.textContent.replace('Click to locate', '').trim(), 
+                                    { icon: userIcon }
+                                );
+                            }
+                        });
+                        nameSpan._hasClickHandler = true;
+                    }
+                }
+            }
+            
+            // Update allOnlineUsers array to keep track of the latest user data
+            const userIndex = allOnlineUsers.findIndex(u => u.userId === targetId);
+            if (userIndex >= 0) {
+                allOnlineUsers[userIndex].location = location;
+                // Update the friends filtered list if needed
+                if (currentDisplayMode === 'friends') {
+                    updateFriendsFilteredList();
+                }
+            }
+        }
+
+        // Helper function to update user entries with new location data
+        function updateUserEntryWithLocation(userId, location) {
+            // Update in all users list
+            const userElement = document.querySelector(`#allUsersList li[data-id="${userId}"]`);
+            if (userElement) {
+                userElement.classList.add('has-location');
+                userElement.dataset.lat = location.latitude;
+                userElement.dataset.lng = location.longitude;
+            }
+            
+            // Update in friends filtered list
+            const friendUserElement = document.querySelector(`#friendsFilteredList li[data-id="${userId}"]`);
+            if (friendUserElement) {
+                friendUserElement.classList.add('has-location');
+                friendUserElement.dataset.lat = location.latitude;
+                friendUserElement.dataset.lng = location.longitude;
+            }
+        }
+
+        function handleUserDisconnect(data) {
+            // Remove marker if the user disconnected properly
+            markerManager.removeMarker(data.userId);
+            
+            // Remove from last seen tracking
+            if (window.userLastSeen) {
+                window.userLastSeen.delete(data.userId);
+            }
+            
+            // If this was the tracked user, clear tracking
+            if (trackedUserId === data.userId) {
+                trackedUserId = null;
+                markerManager.clearPath();
+            }
+            
+            // Remove from users list immediately
+            if (window.allOnlineUsers) {
+                window.allOnlineUsers = window.allOnlineUsers.filter(user => user.userId !== data.userId);
+                
+                // Update UI
+                updateUsersList(window.allOnlineUsers);
+                updateNearbyUsersList();
+            }
+        }
+
+        function updateTrackingStatus(isActive) {
+            const statusElement = document.getElementById('trackingStatus');
+            if (statusElement) {
+                statusElement.textContent = isActive ? 'Active' : 'Inactive';
+                statusElement.className = isActive ? 'tracking-badge' : 'tracking-badge inactive';
+            }
+        }
+
+        // Center button
+        document.getElementById('centerButton').addEventListener('click', () => {
+            const lastPos = locationTracker.getLastPosition();
+            if (lastPos) {
+                map.flyTo([lastPos.latitude, lastPos.longitude], 15, {
+                    duration: 1.5,
+                    easeLinearity: 0.25
+                });
+            } else {
+                alert('Your location is not available yet');
+            }
+        });
+
+        // Toggle trail button
+        document.getElementById('toggleTrailButton').addEventListener('click', () => {
+            localTrailVisible = !localTrailVisible;
+            const toggleBtn = document.getElementById('toggleTrailButton');
+            
+            if (localTrailVisible) {
+                // Update button text and class
+                toggleBtn.textContent = 'Hide Trail';
+                toggleBtn.classList.add('active');
+                
+                // Show all trails
+                markerManager.showAllTrails();
+                
+                // For current user - ensure it has a trail
+                const lastPos = locationTracker.getLastPosition();
+                if (lastPos) {
+                    const currentUserMarker = markerManager.getMarker(userId);
+                    if (currentUserMarker && !currentUserMarker.trail) {
+                    markerManager.setMarker(userId, lastPos.latitude, lastPos.longitude, username, {
+                        icon: userIcon,
+                        isTrail: true
+                    });
+                }
+                }
+                
+                // For tracked user - ensure it has a trail
+                if (trackedUserId) {
+                    const trackedUser = window.allOnlineUsers.find(u => u.userId === trackedUserId);
+                    if (trackedUser && trackedUser.location) {
+                        const trackedMarker = markerManager.getMarker(trackedUserId);
+                        if (trackedMarker && !trackedMarker.trail) {
+                            markerManager.setMarker(trackedUserId, 
+                                trackedUser.location.latitude, 
+                                trackedUser.location.longitude, 
+                                trackedUser.username, 
+                                {
+                                    icon: userIcon,
+                                    isTrail: true
+                                }
+                            );
+                        }
+                    }
+                }
+            } else {
+                // Update button text and class
+                toggleBtn.textContent = 'Show Trail';
+                toggleBtn.classList.remove('active');
+                
+                // Hide all trails
+                markerManager.clearAllTrails();
+            }
+        });
+
+        // Add Friend Modal Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const addFriendBtn = document.getElementById('addFriendBtn');
+            const addFriendModal = new bootstrap.Modal(document.getElementById('addFriendModal'));
+            const friendUsernameInput = document.getElementById('friendUsername');
+            const addFriendSubmit = document.getElementById('addFriendSubmit');
+            const friendAddStatus = document.getElementById('friendAddStatus');
+            const searchResults = document.getElementById('searchResults');
+            const friendsList = document.getElementById('friendsList');
+            const showAllBtn = document.getElementById('showAllBtn');
+            const showFriendsBtn = document.getElementById('showFriendsBtn');
+            
+            // Store all online users and friends (local references to global variables)
+            let allOnlineUsers = window.allOnlineUsers;
+            let myFriends = window.myFriends;
+            let currentDisplayMode = window.currentDisplayMode;
+            // Use the global friendsLoaded variable
+            let friendsLoaded = window.friendsLoaded;
+            
+            // Try to extract current users from DOM if already rendered
+            extractCurrentUsers();
+            
+            // Load friends list
+            loadFriendsList();
+            
+            // Setup filter buttons
+            showAllBtn.addEventListener('click', function() {
+                if (currentDisplayMode !== 'all') {
+                    showAllBtn.classList.add('active');
+                    showFriendsBtn.classList.remove('active');
+                    currentDisplayMode = 'all';
+                    window.currentDisplayMode = 'all';
+                    
+                    // Toggle visibility of lists
+                    document.getElementById('allUsersList').style.display = 'block';
+                    document.getElementById('friendsFilteredList').style.display = 'none';
+                    
+                    if (window.logState) {
+                        window.logState('showAllBtn');
+                    }
+                }
+            });
+            
+            showFriendsBtn.addEventListener('click', function() {
+                if (currentDisplayMode !== 'friends') {
+                    showAllBtn.classList.remove('active');
+                    showFriendsBtn.classList.add('active');
+                    currentDisplayMode = 'friends';
+                    window.currentDisplayMode = 'friends';
+                    
+                    // Toggle visibility of lists
+                    document.getElementById('allUsersList').style.display = 'none';
+                    document.getElementById('friendsFilteredList').style.display = 'block';
+                    
+                    // Make sure the friends list is updated
+                    updateFriendsFilteredList();
+                    
+                    if (window.logState) {
+                        window.logState('showFriendsBtn');
+                    }
+                }
+            });
+            
+            // Monitor for updates to the users list
+            const userListObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList' && currentDisplayMode === 'friends') {
+                        // If we're in friends-only mode, re-filter after any userList update
+                        setTimeout(() => updateFriendsFilteredList(), 50);
+                        break;
+                    }
+                }
+            });
+            
+            // Start observing changes to the all users list
+            userListObserver.observe(document.getElementById('allUsersList'), { 
+                childList: true, 
+                subtree: true 
+            });
+            
+            function loadFriendsList() {
+                fetch('/users/friends')
+                    .then(response => response.json())
+                    .then(friends => {
+                        console.log('Loaded friends from API:', friends);
+                        
+                        // Store friends for filtering
+                        myFriends = friends || [];
+                        window.myFriends = friends || [];
+                        
+                        if (window.logState) {
+                            window.logState('loadFriendsList');
+                        }
+                        
+                        // Update the friends-filtered list
+                        updateFriendsFilteredList();
+                        
+                        if (Array.isArray(friends) && friends.length > 0) {
+                            friendsList.innerHTML = '';
+                            friends.forEach(friend => {
+                                // Find if this friend is online and has location
+                                const onlineFriend = allOnlineUsers.find(user => 
+                                    user.userId.toString() === friend.id.toString()
+                                );
+                                
+                                const hasLocation = onlineFriend && 
+                                                  onlineFriend.location && 
+                                                  onlineFriend.location.latitude && 
+                                                  onlineFriend.location.longitude;
+                                
+                                const li = document.createElement('li');
+                                li.className = hasLocation ? 'has-location friend-item' : 'friend-item';
+                                li.dataset.userId = friend.id;
+                                
+                                // Create friend name span
+                                const nameSpan = document.createElement('span');
+                                nameSpan.className = 'friend-name';
+                                nameSpan.textContent = friend.username;
+                                li.appendChild(nameSpan);
+                                
+                                // Create delete button
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.className = 'delete-friend';
+                                deleteBtn.innerHTML = '&#10005;'; // X symbol
+                                deleteBtn.title = 'Remove friend';
+                                deleteBtn.addEventListener('click', function(e) {
+                                    e.stopPropagation(); // Prevent triggering the parent click
+                                    deleteFriend(friend.id, li);
+                                });
+                                li.appendChild(deleteBtn);
+                                
+                                if (hasLocation) {
+                                    // Add location data and click handler for locating on map
+                                    li.dataset.lat = onlineFriend.location.latitude;
+                                    li.dataset.lng = onlineFriend.location.longitude;
+                                    
+                                    // Add the location hint element
+                                    const locationHint = document.createElement('span');
+                                    locationHint.className = 'location-hint';
+                                    locationHint.textContent = 'Click to locate';
+                                    nameSpan.appendChild(locationHint);
+                                    
+                                    nameSpan.addEventListener('click', function() {
+                                        const lat = parseFloat(li.dataset.lat);
+                                        const lng = parseFloat(li.dataset.lng);
+                                        
+                                        // Center map on friend
+                                        map.flyTo([lat, lng], 15, {
+                                            duration: 1.5,
+                                            easeLinearity: 0.25
+                                        });
+                                        
+                                        // Get the user ID and check if markers exist
+                                        const friendUserId = li.dataset.userId;
+                                        const marker = markerManager.markers.get(friendUserId);
+                                        
+                                        if (!marker && onlineFriend) {
+                                            // If marker doesn't exist, create it
+                                            markerManager.setMarker(
+                                                friendUserId, 
+                                                lat, 
+                                                lng, 
+                                                friend.username, 
+                                                { icon: userIcon }
+                                            );
+                                        }
+                                    });
+                                }
+                                
+                                friendsList.appendChild(li);
+                            });
+                            
+                            // If we're in friends-only mode, refresh the display
+                            if (currentDisplayMode === 'friends') {
+                                updateFriendsFilteredList();
+                            }
+                        } else {
+                            friendsList.innerHTML = '<li>No friends added yet</li>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading friends:', error);
+                        friendsList.innerHTML = '<li>Error loading friends</li>';
+                    });
+            }
+            
+            // Function to delete a friend
+            function deleteFriend(friendId, listItem) {
+                if (!confirm(`Are you sure you want to remove this friend?`)) {
+                    return;
+                }
+                
+                fetch(`/users/friends/${friendId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove from DOM
+                        listItem.remove();
+                        
+                        // Update myFriends array
+                        myFriends = myFriends.filter(f => f.id.toString() !== friendId.toString());
+                        window.myFriends = myFriends;
+                        
+                        // Show message if no friends left
+                        if (myFriends.length === 0) {
+                            friendsList.innerHTML = '<li>No friends added yet</li>';
+                        }
+                        
+                        // Update the friends-filtered list
+                        updateFriendsFilteredList();
+                        
+                        // Show success toast
+                        showToast('Friend removed successfully', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to remove friend', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error removing friend:', error);
+                    showToast('Error removing friend', 'error');
+                });
+            }
+            
+            let selectedUsername = null;
+            
+            if (addFriendBtn) {
+                addFriendBtn.addEventListener('click', function() {
+                    addFriendModal.show();
+                });
+            }
+            
+            // Search for users as typing
+            if (friendUsernameInput) {
+                friendUsernameInput.addEventListener('input', async function() {
+                    const query = friendUsernameInput.value.trim();
+                    
+                    if (query.length < 2) {
+                        searchResults.innerHTML = '';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`/users/search?query=${encodeURIComponent(query)}`);
+                        const data = await response.json();
+                        
+                        if (Array.isArray(data) && data.length > 0) {
+                            searchResults.innerHTML = '';
+                            data.forEach(user => {
+                                const userElement = document.createElement('div');
+                                userElement.className = 'p-2 border-bottom user-search-item';
+                                userElement.textContent = user.username;
+                                userElement.style.cursor = 'pointer';
+                                userElement.addEventListener('click', function() {
+                                    friendUsernameInput.value = user.username;
+                                    selectedUsername = user.username;
+                                    searchResults.innerHTML = '';
+                                });
+                                searchResults.appendChild(userElement);
+                            });
+                        } else {
+                            searchResults.innerHTML = '<div class="p-2 text-muted">No users found</div>';
+                        }
+                    } catch (error) {
+                        console.error('Error searching for users:', error);
+                        searchResults.innerHTML = '<div class="p-2 text-danger">Error searching for users</div>';
+                    }
+                });
+            }
+            
+            // Add friend submission
+            if (addFriendSubmit) {
+                addFriendSubmit.addEventListener('click', async function() {
+                    const username = friendUsernameInput.value.trim();
+                    
+                    if (!username) {
+                        friendAddStatus.innerHTML = '<div class="alert alert-danger">Please enter a username</div>';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/users/add-friend', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ username })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            friendAddStatus.innerHTML = '<div class="alert alert-success">Friend added successfully!</div>';
+                            friendUsernameInput.value = '';
+                            
+                            // Reload friends list
+                            loadFriendsList();
+                            
+                            // Close modal after a delay
+                            setTimeout(() => {
+                                addFriendModal.hide();
+                                friendAddStatus.innerHTML = '';
+                            }, 1500);
+                        } else {
+                            friendAddStatus.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to add friend'}</div>`;
+                        }
+                    } catch (error) {
+                        console.error('Error adding friend:', error);
+                        friendAddStatus.innerHTML = '<div class="alert alert-danger">Error adding friend. Please try again.</div>';
+                    }
+                });
+            }
+        });
+
+        // Global helper functions and utilities
+
+        // Simple toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Helper function to calculate distance between two coordinates using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the earth in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            const distance = R * c; // Distance in km
+            return distance;
+        }
+        
+        // Format distance for display
+        function formatDistance(distance) {
+            if (distance < 1) {
+                return Math.round(distance * 1000) + ' m';
+            } else if (distance < 10) {
+                return distance.toFixed(1) + ' km';
+            } else {
+                return Math.round(distance) + ' km';
+            }
+        }
+        
+        // Update nearby users list sorted by distance
+        function updateNearbyUsersList() {
+            const nearbyUsersList = document.getElementById('nearbyUsersList');
+            const lastPos = locationTracker.getLastPosition();
+            
+            if (!lastPos || !window.allOnlineUsers || window.allOnlineUsers.length === 0) {
+                nearbyUsersList.innerHTML = '<li>No location data available</li>';
+                return;
+            }
+            
+            // Filter users who have location data and calculate distances
+            const usersWithDistances = window.allOnlineUsers
+                .filter(user => 
+                    user.userId !== userId && 
+                    user.location && 
+                    user.location.latitude && 
+                    user.location.longitude
+                )
+                .map(user => {
+                    const distance = calculateDistance(
+                        lastPos.latitude, 
+                        lastPos.longitude, 
+                        user.location.latitude, 
+                        user.location.longitude
+                    );
+                    return { ...user, distance };
+                })
+                .sort((a, b) => a.distance - b.distance);
+            
+            if (usersWithDistances.length === 0) {
+                nearbyUsersList.innerHTML = '<li>No users with location data</li>';
+                return;
+            }
+            
+            let html = '';
+            usersWithDistances.forEach(user => {
+                const isTracked = user.userId === trackedUserId;
+                
+                html += `
+                    <li data-id="${user.userId}" class="user-entry has-location ${isTracked ? 'active' : ''}" 
+                        data-lat="${user.location.latitude}" data-lng="${user.location.longitude}">
+                        <div class="user-entry-content">
+                            <span class="status-dot status-active"></span>
+                            <div class="user-info">
+                                <strong>${user.username || 'Anonymous'}</strong>
+                                <span class="distance-badge">${formatDistance(user.distance)}</span>
+                            </div>
+                            ${isTracked ? '<span class="tracking-badge">Tracking</span>' : ''}
+                            <span class="location-hint">Click to locate</span>
+                        </div>
+                    </li>
+                `;
+            });
+            
+            nearbyUsersList.innerHTML = html;
+            
+            // Add click handlers
+            document.querySelectorAll('#nearbyUsersList .user-entry').forEach(entry => {
+                entry.addEventListener('click', function() {
+                    const targetUserId = this.dataset.id;
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    const username = this.querySelector('strong').textContent;
+                    
+                    // Center map on user
+                    map.flyTo([lat, lng], 15, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Handle user tracking
+                    if (targetUserId !== userId) {
+                        if (trackedUserId === targetUserId) {
+                            markerManager.clearPath();
+                            trackedUserId = null;
+                        } else {
+                            // Start tracking new user
+                            if (trackedUserId) {
+                                markerManager.clearPath();
+                            }
+                            trackedUserId = targetUserId;
+                            
+                            // Request location history
+                            requestUserTrack(targetUserId);
+                        }
+                        
+                        // Update UI
+                        document.querySelectorAll('.user-entry').forEach(el => el.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Function to check for and remove inactive users
+        function startInactivityCleanup() {
+            console.log('Starting user inactivity cleanup timer');
+            
+            // Run cleanup at regular intervals
+            setInterval(() => {
+                checkAndRemoveInactiveUsers();
+            }, CLEANUP_INTERVAL);
+        }
+        
+        // Check for and remove inactive users
+        function checkAndRemoveInactiveUsers() {
+            const now = Date.now();
+            let removedCount = 0;
+            
+            // Remove stale markers first
+            const staleMarkers = markerManager.removeStaleMarkers(USER_INACTIVITY_THRESHOLD);
+            if (staleMarkers.length > 0) {
+                console.log(`Removed ${staleMarkers.length} stale markers`);
+            }
+            
+            // Check the online users list and remove inactive users
+            if (window.allOnlineUsers && window.allOnlineUsers.length > 0) {
+                // Filter users to keep only active ones
+                const activeUsers = window.allOnlineUsers.filter(user => {
+                    // Skip current user
+                    if (user.userId === userId) return true;
+                    
+                    // Get the most recent activity time from multiple sources
+                    const markerLastSeen = markerManager.getLastSeen(user.userId);
+                    const userMapLastSeen = window.userLastSeen ? window.userLastSeen.get(user.userId) : null;
+                    
+                    // Use the most recent activity timestamp
+                    const lastActivity = Math.max(
+                        markerLastSeen || 0,
+                        userMapLastSeen || 0
+                    );
+                    
+                    // If we have no activity data or user has been inactive too long
+                    if (!lastActivity || (now - lastActivity) > USER_INACTIVITY_THRESHOLD) {
+                        console.log(`User ${user.username} (${user.userId}) has been inactive for too long and will be removed`);
+                        removedCount++;
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // Update global users list and UI if any users were removed
+                if (removedCount > 0) {
+                    console.log(`Removed ${removedCount} inactive users from online list`);
+                    window.allOnlineUsers = activeUsers;
+                    
+                    // Update the UI
+                    updateUsersList(activeUsers);
+                    
+                    // Also update nearby users list
+                    updateNearbyUsersList();
+                    
+                    // Show a toast notification that users were removed due to inactivity
+                    showToast(`${removedCount} user(s) removed due to inactivity`, 'info');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 

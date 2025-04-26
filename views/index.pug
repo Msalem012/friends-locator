@@ -1,0 +1,75 @@
+extends layout
+
+block head
+  link(rel='stylesheet', href='/stylesheets/theme.css')
+  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css')
+
+block content    
+
+  p <h2>Welcome to our Geolocator website!</h2>
+  
+  button#theme-toggle(title="Toggle dark/light mode", style="position: absolute; top: 20px; right: 20px; border: none; background: transparent; font-size: 1.5rem; cursor: pointer; z-index: 1000;")
+    i.fas.fa-moon
+  
+  div#map(style="height: 400px; width: 100%;")
+  
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js')
+  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css')
+  script(src='/javascripts/theme-switcher.js')
+  
+  script.
+    // Initialize the map with a default view (will be updated)
+    const map = L.map('map').setView([0, 0], 2);
+    let userMarker;
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        // Success callback
+        function(position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          
+          // Update map view to user's location
+          map.setView([latitude, longitude], 13);
+          
+          // Add a marker at user's location
+          userMarker = L.marker([latitude, longitude]).addTo(map)
+            .bindPopup('You are here!')
+            .openPopup();
+            
+        },
+        // Error callback
+        function(error) {
+          console.error("Error getting location:", error);
+          document.getElementById('location-status').textContent = 
+            'Could not access your location. Error: ' + error.message;
+          
+          // Fallback to a default location
+          map.setView([51.505, -0.09], 13);
+          userMarker = L.marker([51.505, -0.09]).addTo(map)
+            .bindPopup('Default location (location access denied)')
+            .openPopup();
+        },
+        // Options
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      document.getElementById('location-status').textContent = 
+        'Geolocation is not supported by your browser';
+      
+      // Fallback to a default location
+      map.setView([51.505, -0.09], 13);
+      userMarker = L.marker([51.505, -0.09]).addTo(map)
+        .bindPopup('Default location (geolocation not supported)')
+        .openPopup();
+    }

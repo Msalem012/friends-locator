@@ -1,0 +1,105 @@
+/* Theme Styles */
+:root {
+    /* Light theme variables */
+    --bg-color: #fff;
+    --text-color: #333;
+    --navbar-bg: #343a40;
+    --navbar-text: #fff;
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --hover-bg: rgba(13, 110, 253, 0.1);
+    --muted-text: #6c757d;
+    --control-bg: rgba(255, 255, 255, 0.8);
+}
+
+.dark-theme {
+    /* Dark theme variables */
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --navbar-bg: #1e1e1e;
+    --navbar-text: #e0e0e0;
+    --card-bg: rgba(30, 30, 30, 0.8);
+    --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-bg: rgba(66, 135, 245, 0.2);
+    --muted-text: #a0a0a0;
+    --control-bg: rgba(30, 30, 30, 0.8);
+}
+
+/* Apply theme variables */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar {
+    background-color: var(--navbar-bg);
+    color: var(--navbar-text);
+}
+
+.online-users, 
+.sidebar, 
+.map-controls button {
+    background: var(--control-bg);
+    box-shadow: var(--card-shadow);
+    color: var(--text-color);
+}
+
+.online-users h3,
+.sidebar h3 {
+    color: var(--text-color);
+    border-bottom-color: var(--border-color);
+}
+
+.user-list li {
+    color: var(--text-color);
+    border-bottom-color: var(--border-color);
+}
+
+.user-list li.has-location:hover {
+    background-color: var(--hover-bg);
+}
+
+.user-list li .location-hint {
+    color: var(--muted-text);
+}
+
+/* Theme toggle button styles */
+#theme-toggle {
+    background-color: transparent;
+    border: none;
+    color: var(--navbar-text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+#theme-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: rotate(15deg);
+}
+
+/* Dark theme map adjustments */
+.dark-theme .leaflet-tile {
+    filter: brightness(0.8) contrast(1.1) saturate(0.7) invert(1) hue-rotate(180deg);
+}
+
+/* Dark theme tooltips and popups */
+.dark-theme .leaflet-tooltip,
+.dark-theme .leaflet-popup-content-wrapper {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+.dark-theme .leaflet-popup-tip {
+    background-color: #333;
+} 

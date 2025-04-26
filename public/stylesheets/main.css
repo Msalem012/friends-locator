@@ -1,0 +1,21 @@
+body {
+    padding: 20px;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+    color: #00B7FF;
+}
+
+/* Map container - this is critical */
+#map {
+    height: 300px;
+    width: 100%;
+    margin: 20px 0;
+    border: 1px solid #ccc;
+}
+
+#location-status {
+    margin-top: 10px;
+    font-style: italic;
+}

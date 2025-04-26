@@ -1,0 +1,216 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.navbar {
+    background-color: #343a40;
+    padding: 1rem;
+    color: white;
+}
+
+    .navbar a {
+        color: white;
+        text-decoration: none;
+        margin-right: 1rem;
+    }
+
+        .navbar a:hover {
+            color: #ccc;
+        }
+
+.btn {
+    display: inline-block;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+    .form-control:focus {
+        color: #495057;
+        background-color: #fff;
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+.alert {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+
+
+
+
+
+.custom-popup {
+    position: relative;
+    display: inline-block;
+    width: fit-content;
+    max-width: 180px;
+    padding: 6px 10px 8px 10px;
+    background-color: #ffffff;
+    border: 1px solid #bbbbbb;
+    border-radius: 8px;
+    box-shadow: 0 1.5px 6px rgba(0,0,0,0.15);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.3;
+    transition: transform 0.2s ease;
+}
+
+    /* Онлайн-индикатор */
+    .custom-popup::before {
+        content: "";
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        width: 8px;
+        height: 8px;
+        background-color: #4caf50;
+        border-radius: 50%;
+        box-shadow: 0 0 2px rgba(0,0,0,0.2);
+    }
+
+.popup-header {
+    font-weight: 600;
+    font-size: 13.5px;
+    color: #222;
+    margin-left: 14px;
+    margin-bottom: 3px;
+}
+
+.popup-body {
+    font-size: 12.5px;
+    color: #444;
+    margin-left: 14px;
+}
+
+
+.custom-marker-class {
+    width: 28px;
+    height: 28px;
+    background-color: #fff;
+    border: 1.5px solid #4caf50;
+    border-radius: 50%;
+    box-shadow: 0 1.5px 4px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .custom-marker-class img {
+        width: 50px; /* было 24px */
+        height: 50px;
+        object-fit: contain;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+    }
+
+.custom-marker {
+    transition: transform 0.2s;
+}
+
+.marker-inner {
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.marker-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.marker-username {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    text-shadow: 0 0 3px black;
+}
+
+.leaflet-interactive {
+    transition: stroke-width 0.2s, opacity 0.2s;
+}
