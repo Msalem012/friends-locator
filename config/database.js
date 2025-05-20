@@ -1,11 +1,18 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Try explicit connection parameters instead of connection string
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://geoloc_db_user:bQEoaTIW1woXxglTsoRZDxbGU9rp2KGA@dpg-cvpk30euk2gs739l3drg-a.frankfurt-postgres.render.com/geoloc_db',
+    user: 'geoloc_db_jq8s_user',
+    password: 'iIIKQaSn8mx7Cn6Rej0dRw9fWqubXhuA',
+    host: 'dpg-d0mdv5muk2gs73fj6v10-a.frankfurt-postgres.render.com',
+    port: 5432,
+    database: 'geoloc_db_jq8s',
     ssl: {
         rejectUnauthorized: false
-    }
+    },
+    connectionTimeoutMillis: 10000, // 10 seconds
+    idleTimeoutMillis: 30000 // 30 seconds
 });
 
 // Test the connection

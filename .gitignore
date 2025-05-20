@@ -1,0 +1,11 @@
+# Visual Studio cache
+.vs/
+
+# Build output
+obj/
+
+# Node.js modules
+node_modules/
+
+# dotenv environment variables file
+.env
